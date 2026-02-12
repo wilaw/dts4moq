@@ -4,8 +4,19 @@
 
 Media Over QUIC                                                   W. Law
 Internet-Draft                                                    Akamai
-Intended status: Informational                          12 February 2026
-Expires: 16 August 2026
+Intended status: Informational                                  I. Swett
+Expires: 16 August 2026                                           Google
+                                                           S. Nandakumar
+                                                               M. Zanaty
+                                                                   Cisco
+                                                             V. Vasiliev
+                                                                  Google
+                                                                A. Begen
+                                                                Z. Gurel
+                                                      Ozyegin University
+                                                                G. Simon
+                                                               Synamedia
+                                                        12 February 2026
 
 
                 Dynamic Track Switching for MOQT relays
@@ -77,7 +88,7 @@ Table of Contents
    6.  IANA Considerations
    7.  Normative References
    Acknowledgments
-   Author's Address
+   Authors' Addresses
 
 1.  Introduction
 
@@ -262,8 +273,43 @@ Acknowledgments
 
    TODO acknowledge.
 
-Author's Address
+Authors' Addresses
 
    Will Law
    Akamai
    Email: 2762250+wilaw@users.noreply.github.com
+
+
+   Ian Swett
+   Google
+   Email: ianswett@google.com
+
+
+   Suhas Nandakumar
+   Cisco
+   Email: snandaku@cisco.com
+
+
+   Mo Zanaty
+   Cisco
+   Email: mzanaty@cisco.com
+
+
+   Victor Vasiliev
+   Google
+   Email: vasilvv@google.com
+
+
+   Ali Begen
+   Ozyegin University
+   Email: ali.begen@ozyegin.edu.tr
+
+
+   Zafer Gurel
+   Ozyegin University
+   Email: zafer.gurel@ozu.edu.tr
+
+
+   Gwendal Simon
+   Synamedia
+   Email: gsimon@synamedia.com
