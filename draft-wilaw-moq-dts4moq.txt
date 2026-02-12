@@ -2,7 +2,7 @@
 
 
 
-WG Working Group                                                  W. Law
+Media Over QUIC                                                   W. Law
 Internet-Draft                                                    Akamai
 Intended status: Informational                          12 February 2026
 Expires: 16 August 2026
@@ -20,16 +20,17 @@ About This Document
    This note is to be removed before publishing as an RFC.
 
    The latest revision of this draft can be found at
-   https://example.com/LATEST.  Status information for this document may
-   be found at https://datatracker.ietf.org/doc/draft-wilaw-moq-
-   dts4moq/.
+   https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html.  Status
+   information for this document may be found at
+   https://datatracker.ietf.org/doc/draft-wilaw-moq-dts4moq/.
 
-   Discussion of this document takes place on the WG Working Group
-   mailing list (mailto:WG@example.com), which is archived at
-   https://example.com/WG.
+   Discussion of this document takes place on the Media Over QUIC
+   Working Group mailing list (mailto:moq@ietf.org), which is archived
+   at https://mailarchive.ietf.org/arch/browse/moq/.  Subscribe at
+   https://www.ietf.org/mailman/listinfo/moq/.
 
    Source for this draft and an issue tracker can be found at
-   https://github.com/USER/REPO.
+   https://github.com/wilaw/dts4moq.
 
 Status of This Memo
 
@@ -65,18 +66,166 @@ Copyright Notice
 Table of Contents
 
    1.  Introduction
-   2.  Conventions and Definitions
-   3.  Security Considerations
-   4.  IANA Considerations
-   5.  Normative References
+   2.  Subscribe parameters
+     2.1.  The SWITCHING-SET-ASSIGNMENT parameter
+     2.2.  The DTS-ACTIVATION parameter.
+   3.  Workflow
+     3.1.  Client workflow
+     3.2.  Relay workflow
+   4.  Conventions and Definitions
+   5.  Security Considerations
+   6.  IANA Considerations
+   7.  Normative References
    Acknowledgments
    Author's Address
 
 1.  Introduction
 
-   TODO Introduction
+   This draft adds the capability of Dynamic Track Switching (DTS) to
+   Media over QUIC Transport [MOQT].  Dynamic Track Switching allows a
+   relay to dynamically switch which groups are forwarded from among a
+   set of subscriptions.  One use-case enabled by DTS is Adaptive
+   Bitrate Streaming (ABR), in which time-aligned media tracks are
+   switched at group boundaries based upon available throughput
+   estimates.
 
-2.  Conventions and Definitions
+   DTS is enabled and disabled by the subscriber.  The definition of the
+   switching sets and the metadata required to implement the switching
+   rules are defined by either the subscriber or the original
+   punblisher.
+
+2.  Subscribe parameters
+
+   We introduce two new message parameters to enable Dynamic Track
+   Switching.
+
+2.1.  The SWITCHING-SET-ASSIGNMENT parameter
+
+   The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) MAY
+   appear in a SUBSCRIBE or REQUEST_UPDATE message.  This parameter
+   assigns the accompanying subscription to a DTS switching set and
+   specifies a waiting time-limit.  The parameter body is serialized as
+   follows:
+
+   SWITCHING-SET-ASSIGNMENT {
+     Switching set ID (vi64),
+     [Throughput threshold (vi64),
+     Selection time limit (vi64)]
+   }
+
+   *  Switching set ID - an integer specifying a switching set.  The
+      value zero is reserved to indicate no switching set.
+
+   *  Throughput threshold - the minimum throughput, expressed in
+      integer kilobits per second, necessary to select this
+      subscription.  This value MUST be omitted if the Switching set ID
+      is zero.
+
+   *  Selection time limit - the maximum amount of time, in
+      milliseconds, which a relay MUST wait after the arrival of the
+      first candidate group in a switching group, before this
+      subscription is disqualified as the preferred selection.  This
+      value MUST be omitted if the Switching set ID is zero.
+
+2.2.  The DTS-ACTIVATION parameter.
+
+   The DTS-ACTIVATION parameter (Parameter Type 0x43) MAY appear in a
+   SUBSCRIBE or REQUEST_UPDATE message.  This parameter enables or
+   disables dynamic track switching for a specified switching set.  The
+   parameter body is serialized as follows:
+
+   DTS-ACTIVATION {
+     Switching set ID (vi64),
+     State (1)
+   }
+
+   *  Switching set ID - an integer referencing a previously defined
+      switching set.
+
+   *  State - a value of 1 activates dynanmic switching for the
+      specified switching set and a value of 0 deactivates it.
+
+3.  Workflow
+
+3.1.  Client workflow
+
+   1.  The client decides, through a catalog or other out-of-band
+       mechanism, which of a set of tracks it wishes to enable for DTS.
+
+   2.  The client selects an integer identifier to label this set.  This
+       identifier MUST be unique within the MOQT connection.
+
+   3.  For each track, it issues a SUBSCRIPTION and appends a SWITCHING-
+       SET-ASSIGNMENT parameter.  Within that parameter, it communicates
+       the set identifier, the throughput threshold and the time limit.
+
+   4.  On the last SUBCRIPTION, the client also appends the DTS-
+       ACTIVATION parameter and sets it value to 1.  Dynamic track
+       selection is now active for the switching set.
+
+   To disable dynamic track selection for a given switching set, the
+   client sends a DTS-ACTIVATION parameter with a state value of 0 on a
+   REQUEST-UPDATE message.  This action leaves all subscriptions in that
+   switching set still active, but with a Forward state of 0.  To re-
+   enable dynamic track selection for that set, the client sends a DTS-
+   ACTIVATION parameter with a state value of 1 on a REQUEST-UPDATE
+   message.
+
+   To remove one track from a switching set, while leaving the other
+   tracks active, the client issues a REQUEST_UPDATE message with the
+   request ID referencing the subscription it wishes to remove and a
+   SWITCHING-SET-ASSIGNMENT parameter with a Switching set ID of zero.
+
+   To add a new track to an existing switching set, the client issues a
+   SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT parameter, with
+   the Switching set ID poiniting at the existing switching set.
+
+3.2.  Relay workflow
+
+   1.  Upon receiving a SWITCHING-SET-ASSIGNMENT parameter, the relay
+       adds the subscription to the specified switching set, creating
+       the switching set if it does not yet exist.  The Forward state of
+       the subscription is set to zero.
+
+   2.  Upon receiving a DTS-ACTIVATION parameter with a state of 1, the
+       relay beings active track selection.  Active track selection
+       implies that the relay monitor the incoming new groups as well as
+       maintain an estimate of the throughput available in the
+       connection.  This throughput estimate SHOULD be applicable over
+       the maximum Group duration of the tracks being switched.
+
+   3.  When the first Object 0 of new Group N of track T arrives at the
+       relay, the relay selects the preferred track to forward from the
+       switching set.  The preferred track is the track with the highest
+       throughput threshold smaller than or equal to the current
+       throughput estimate.  The relay sets the Forward state to 1 for
+       this track and to 0 for all other tracks in the switching set.
+       If no tracks in the switching set satisfy this condition, then
+       all tracks are set to a Forward state of 0.  No content will be
+       delivered until the decision is re-evaulated at the next Gorup
+       boundary.
+
+   4.  If the track T happens to be the preferred track, then the relay
+       forwards all Objects from that Group and no futher evaluations
+       are required until Group N+1 arrives.  If the track T is not the
+       preferred track, then the relay caches the Group of track T and
+       starts a selection timer.
+
+   5.  If Group N of the preferred track arrives while the selection
+       timer > selection time limit of that track, then the relay
+       forwards the preferred track, the timer can be stopped and no
+       further evaluations are necessary.
+
+   6.  If Group N of the preferred track has not arrived by the time the
+       selection timer reaches the selection time limit, then the relay
+       selects a new preferred track by removing the previously
+       preferred track from its candidate list and re-applying the logic
+       of step 3.  If Group N of the new preferred track has already
+       arrived, then it is served from cache, irrespective of its
+       Selection time limit.  If Group N of the new preferred track has
+       not yet arrived then the selection process repeats at step 6.
+
+4.  Conventions and Definitions
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
@@ -84,15 +233,21 @@ Table of Contents
    BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
-3.  Security Considerations
+5.  Security Considerations
 
    TODO Security
 
-4.  IANA Considerations
+6.  IANA Considerations
 
    This document has no IANA actions.
 
-5.  Normative References
+7.  Normative References
+
+   [MOQT]     Nandakumar, S., Vasiliev, V., Swett, I., and A. Frindell,
+              "Media over QUIC Transport", Work in Progress, Internet-
+              Draft, draft-ietf-moq-transport-16, 13 January 2026,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-moq-
+              transport-16>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -111,4 +266,4 @@ Author's Address
 
    Will Law
    Akamai
-   Email: your.email@example.com
+   Email: 2762250+wilaw@users.noreply.github.com

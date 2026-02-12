@@ -1059,7 +1059,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <div id="internal-metadata" class="document-information">
 <dl id="identifiers">
 <dt class="label-workgroup">Workgroup:</dt>
-<dd class="workgroup">WG Working Group</dd>
+<dd class="workgroup">Media Over QUIC</dd>
 <dt class="label-internet-draft">Internet-Draft:</dt>
 <dd class="internet-draft">draft-wilaw-moq-dts4moq-latest</dd>
 <dt class="label-published">Published:</dt>
@@ -1090,14 +1090,15 @@ svg :is([fill="white"], [fill^="#fff"]) {
       </h2>
 <p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
 <p id="section-note.1-2">
-        The latest revision of this draft can be found at <span><a href="https://example.com/LATEST">https://example.com/LATEST</a></span>.
+        The latest revision of this draft can be found at <span><a href="https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html">https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html</a></span>.
         Status information for this document may be found at <span><a href="https://datatracker.ietf.org/doc/draft-wilaw-moq-dts4moq/">https://datatracker.ietf.org/doc/draft-wilaw-moq-dts4moq/</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
 <p id="section-note.1-3">
         Discussion of this document takes place on the
-        WG Working Group mailing list (<span><a href="mailto:WG@example.com">mailto:WG@example.com</a></span>),
-        which is archived at <span><a href="https://example.com/WG">https://example.com/WG</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+        Media Over QUIC Working Group mailing list (<span><a href="mailto:moq@ietf.org">mailto:moq@ietf.org</a></span>),
+        which is archived at <span><a href="https://mailarchive.ietf.org/arch/browse/moq/">https://mailarchive.ietf.org/arch/browse/moq/</a></span>.
+        Subscribe at <span><a href="https://www.ietf.org/mailman/listinfo/moq/">https://www.ietf.org/mailman/listinfo/moq/</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
 <p id="section-note.1-4">Source for this draft and an issue tracker can be found at
-        <span><a href="https://github.com/USER/REPO">https://github.com/USER/REPO</a></span>.<a href="#section-note.1-4" class="pilcrow">¶</a></p>
+        <span><a href="https://github.com/wilaw/dts4moq">https://github.com/wilaw/dts4moq</a></span>.<a href="#section-note.1-4" class="pilcrow">¶</a></p>
 </section>
 <div id="status-of-memo">
 <section id="section-boilerplate.1">
@@ -1151,22 +1152,44 @@ svg :is([fill="white"], [fill^="#fff"]) {
             <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
-            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-subscribe-parameters" class="internal xref">Subscribe parameters</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-the-switching-set-assignmen" class="internal xref">The SWITCHING-SET-ASSIGNMENT parameter</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1" class="keepWithNext"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-the-dts-activation-paramete" class="internal xref">The DTS-ACTIVATION parameter.</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
-            <p id="section-toc.1-1.3.1" class="keepWithNext"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-workflow" class="internal xref">Workflow</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-client-workflow" class="internal xref">Client workflow</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-relay-workflow" class="internal xref">Relay workflow</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
-            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
 </li>
         </ul>
 </nav>
@@ -1177,42 +1200,200 @@ svg :is([fill="white"], [fill^="#fff"]) {
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">TODO Introduction<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-1">This draft adds the capability of Dynamic Track Switching (DTS) to Media over QUIC Transport <span>[<a href="#MOQT" class="cite xref">MOQT</a>]</span>.
+Dynamic Track Switching allows a relay to dynamically switch which groups are forwarded from among
+a set of subscriptions. One use-case enabled by DTS is Adaptive Bitrate Streaming (ABR), in which
+time-aligned media tracks are switched at group boundaries based upon available throughput estimates.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">DTS is enabled and disabled by the subscriber. The definition of the switching sets and the metadata
+required to implement the switching rules are defined by either the subscriber or the original punblisher.<a href="#section-1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="subscribe-parameters">
+<section id="section-2">
+      <h2 id="name-subscribe-parameters">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-subscribe-parameters" class="section-name selfRef">Subscribe parameters</a>
+      </h2>
+<p id="section-2-1">We introduce two new message parameters to enable Dynamic Track Switching.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<div id="the-switching-set-assignment-parameter">
+<section id="section-2.1">
+        <h3 id="name-the-switching-set-assignmen">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-the-switching-set-assignmen" class="section-name selfRef">The SWITCHING-SET-ASSIGNMENT parameter</a>
+        </h3>
+<p id="section-2.1-1">The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) <span class="bcp14">MAY</span> appear in a SUBSCRIBE or REQUEST_UPDATE
+message. This parameter assigns the accompanying subscription to a DTS switching set and specifies a waiting
+time-limit. The parameter body is serialized as follows:<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1-2">
+<pre>
+SWITCHING-SET-ASSIGNMENT {
+  Switching set ID (vi64),
+  [Throughput threshold (vi64),
+  Selection time limit (vi64)]
+}
+</pre><a href="#section-2.1-2" class="pilcrow">¶</a>
+</div>
+<ul class="normal">
+<li class="normal" id="section-2.1-3.1">
+            <p id="section-2.1-3.1.1">Switching set ID - an integer specifying a switching set. The value zero is reserved to indicate no switching set.<a href="#section-2.1-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-3.2">
+            <p id="section-2.1-3.2.1">Throughput threshold - the minimum throughput, expressed in integer kilobits per second, necessary to select
+this subscription. This value <span class="bcp14">MUST</span> be omitted if the Switching set ID is zero.<a href="#section-2.1-3.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.1-3.3">
+            <p id="section-2.1-3.3.1">Selection time limit - the maximum amount of time, in milliseconds, which a relay <span class="bcp14">MUST</span> wait after the arrival of the
+first candidate group in a switching group, before this subscription is disqualified as the preferred selection.
+This value <span class="bcp14">MUST</span> be omitted if the Switching set ID is zero.<a href="#section-2.1-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="the-dts-activation-parameter">
+<section id="section-2.2">
+        <h3 id="name-the-dts-activation-paramete">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-the-dts-activation-paramete" class="section-name selfRef">The DTS-ACTIVATION parameter.</a>
+        </h3>
+<p id="section-2.2-1">The DTS-ACTIVATION parameter (Parameter Type 0x43) <span class="bcp14">MAY</span> appear in a SUBSCRIBE or REQUEST_UPDATE
+message. This parameter enables or disables dynamic track switching for a specified switching set. The
+parameter body is serialized as follows:<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.2-2">
+<pre>
+DTS-ACTIVATION {
+  Switching set ID (vi64),
+  State (1)
+}
+</pre><a href="#section-2.2-2" class="pilcrow">¶</a>
+</div>
+<ul class="normal">
+<li class="normal" id="section-2.2-3.1">
+            <p id="section-2.2-3.1.1">Switching set ID - an integer referencing a previously defined switching set.<a href="#section-2.2-3.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-3.2">
+            <p id="section-2.2-3.2.1">State - a value of 1 activates dynanmic switching for the specified switching set and a value of 0 deactivates it.<a href="#section-2.2-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="workflow">
+<section id="section-3">
+      <h2 id="name-workflow">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-workflow" class="section-name selfRef">Workflow</a>
+      </h2>
+<div id="client-workflow">
+<section id="section-3.1">
+        <h3 id="name-client-workflow">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-client-workflow" class="section-name selfRef">Client workflow</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-3.1-1">
+<li id="section-3.1-1.1">
+            <p id="section-3.1-1.1.1">The client decides, through a catalog or other out-of-band mechanism, which of a set of tracks it wishes to enable
+for DTS.<a href="#section-3.1-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-1.2">
+            <p id="section-3.1-1.2.1">The client selects an integer identifier to label this set. This identifier <span class="bcp14">MUST</span> be unique within the MOQT connection.<a href="#section-3.1-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-1.3">
+            <p id="section-3.1-1.3.1">For each track, it issues a SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT parameter. Within that parameter, it
+communicates the set identifier, the throughput threshold and the time limit.<a href="#section-3.1-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.1-1.4">
+            <p id="section-3.1-1.4.1">On the last SUBCRIPTION, the client also appends the DTS-ACTIVATION parameter and sets it value to 1. Dynamic track
+selection is now active for the switching set.<a href="#section-3.1-1.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-3.1-2">To disable dynamic track selection for a given switching set, the client sends a DTS-ACTIVATION parameter with a state
+value of 0 on a REQUEST-UPDATE message. This action leaves all subscriptions in that switching set still active, but with
+a Forward state of 0. To re-enable dynamic track selection for that set, the client sends a DTS-ACTIVATION parameter with
+a state value of 1 on a REQUEST-UPDATE message.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">To remove one track from a switching set, while leaving the other tracks active, the client issues a REQUEST_UPDATE message
+with the request ID referencing the subscription it wishes to remove and a SWITCHING-SET-ASSIGNMENT parameter with a
+Switching set ID of zero.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">To add a new track to an existing switching set, the client issues a SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT
+parameter, with the Switching set ID poiniting at the existing switching set.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="relay-workflow">
+<section id="section-3.2">
+        <h3 id="name-relay-workflow">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-relay-workflow" class="section-name selfRef">Relay workflow</a>
+        </h3>
+<ol start="1" type="1" class="normal type-1" id="section-3.2-1">
+<li id="section-3.2-1.1">
+            <p id="section-3.2-1.1.1">Upon receiving a SWITCHING-SET-ASSIGNMENT parameter, the relay adds the subscription to the specified switching set,
+creating the switching set if it does not yet exist. The Forward state of the subscription is set to zero.<a href="#section-3.2-1.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.2-1.2">
+            <p id="section-3.2-1.2.1">Upon receiving a DTS-ACTIVATION parameter with a state of 1, the relay beings active track selection.  Active track
+selection implies that the relay monitor the incoming new groups as well as maintain an estimate of the
+throughput available in the connection. This throughput estimate <span class="bcp14">SHOULD</span> be applicable over the maximum Group duration of the
+tracks being switched.<a href="#section-3.2-1.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.2-1.3">
+            <p id="section-3.2-1.3.1">When the first Object 0 of new Group N of track T arrives at the relay, the relay selects the preferred track to forward from the
+switching set. The preferred track is the track with the highest throughput threshold smaller than or equal to the current
+throughput estimate. The relay sets the Forward state to 1 for this track and to 0 for all other tracks in the switching set.
+If no tracks in the switching set satisfy this condition, then all tracks are set to a Forward state of 0. No content will be
+delivered until the decision is re-evaulated at the next Gorup boundary.<a href="#section-3.2-1.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.2-1.4">
+            <p id="section-3.2-1.4.1">If the track T happens to be the preferred track, then the relay forwards all Objects from that Group and no futher
+evaluations are required until Group N+1 arrives. If the track T is not the preferred track, then the relay caches the Group of
+track T and starts a selection timer.<a href="#section-3.2-1.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.2-1.5">
+            <p id="section-3.2-1.5.1">If Group N of the preferred track arrives while the selection timer &gt; selection time limit of that track, then the relay forwards
+the preferred track, the timer can be stopped and no further evaluations are necessary.<a href="#section-3.2-1.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-3.2-1.6">
+            <p id="section-3.2-1.6.1">If Group N of the preferred track has not arrived by the time the selection timer reaches the selection time
+limit, then the relay selects a new preferred track by removing the previously preferred track from its candidate list and
+re-applying the logic of step 3. If Group N of the new preferred track has already arrived, then it is served from cache,
+irrespective of its Selection time limit. If Group N of the new preferred track has not yet arrived then the selection process repeats
+at step 6.<a href="#section-3.2-1.6.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
 </section>
 </div>
 <div id="conventions-and-definitions">
-<section id="section-2">
+<section id="section-4">
       <h2 id="name-conventions-and-definitions">
-<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
       </h2>
-<p id="section-2-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+<p id="section-4-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
 "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
 described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
-appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+appear in all capitals, as shown here.<a href="#section-4-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-considerations">
-<section id="section-3">
+<section id="section-5">
       <h2 id="name-security-considerations">
-<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
       </h2>
-<p id="section-3-1">TODO Security<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-5-1">TODO Security<a href="#section-5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-considerations">
-<section id="section-4">
+<section id="section-6">
       <h2 id="name-iana-considerations">
-<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
-<p id="section-4-1">This document has no IANA actions.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="sec-normative-references">
-<section id="section-5">
+<section id="section-7">
       <h2 id="name-normative-references">
-<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
       </h2>
 <dl class="references">
+<dt id="MOQT">[MOQT]</dt>
+      <dd>
+<span class="refAuthor">Nandakumar, S.</span>, <span class="refAuthor">Vasiliev, V.</span>, <span class="refAuthor">Swett, I.</span>, and <span class="refAuthor">A. Frindell</span>, <span class="refTitle">"Media over QUIC Transport"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-moq-transport-16</span>, <time datetime="2026-01-13" class="refDate">13 January 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-moq-transport-16">https://datatracker.ietf.org/doc/html/draft-ietf-moq-transport-16</a>&gt;</span>. </dd>
+<dd class="break"></dd>
 <dt id="RFC2119">[RFC2119]</dt>
       <dd>
 <span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
@@ -1242,7 +1423,7 @@ appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶<
 <div dir="auto" class="left"><span class="org">Akamai</span></div>
 <div class="email">
 <span>Email:</span>
-<a href="mailto:your.email@example.com" class="email">your.email@example.com</a>
+<a href="mailto:2762250+wilaw@users.noreply.github.com" class="email">2762250+wilaw@users.noreply.github.com</a>
 </div>
 </address>
 </section>
