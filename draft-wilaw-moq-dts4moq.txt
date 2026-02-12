@@ -2,14 +2,14 @@
 
 
 
-WG Working Group                                              Y. N. Here
-Internet-Draft                                    Your Organization Here
+WG Working Group                                                  W. Law
+Internet-Draft                                                    Akamai
 Intended status: Informational                          12 February 2026
 Expires: 16 August 2026
 
 
-                           TODO - Your title
-                  draft-todo-yourname-protocol-latest
+                Dynamic Track Switching for MOQT relays
+                     draft-wilaw-moq-dts4moq-latest
 
 Abstract
 
@@ -21,8 +21,8 @@ About This Document
 
    The latest revision of this draft can be found at
    https://example.com/LATEST.  Status information for this document may
-   be found at https://datatracker.ietf.org/doc/draft-todo-yourname-
-   protocol/.
+   be found at https://datatracker.ietf.org/doc/draft-wilaw-moq-
+   dts4moq/.
 
    Discussion of this document takes place on the WG Working Group
    mailing list (mailto:WG@example.com), which is archived at
@@ -109,6 +109,6 @@ Acknowledgments
 
 Author's Address
 
-   Your Name Here
-   Your Organization Here
+   Will Law
+   Akamai
    Email: your.email@example.com
