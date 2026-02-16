@@ -71,7 +71,7 @@ a set of subscriptions. One use-case enabled by DTS is Adaptive Bitrate Streamin
 time-aligned media tracks are switched at group boundaries based upon available throughput estimates.
 
 DTS is enabled and disabled by the subscriber. The definition of the switching sets and the metadata
-required to implement the switching rules are defined by either the subscriber or the original punblisher.
+required to implement the switching rules are defined by either the subscriber or the original publisher.
 
 # Subscribe parameters
 We introduce two new message parameters to enable Dynamic Track Switching.
@@ -109,7 +109,7 @@ DTS-ACTIVATION {
 ~~~
 
 * Switching set ID - an integer referencing a previously defined switching set.
-* State - a value of 1 activates dynanmic switching for the specified switching set and a value of 0 deactivates it.
+* State - a value of 1 activates dynamic switching for the specified switching set and a value of 0 deactivates it.
 
 # Workflow
 
@@ -120,7 +120,7 @@ DTS-ACTIVATION {
 2. The client selects an integer identifier to label this set. This identifier MUST be unique within the MOQT connection.
 3. For each track, it issues a SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT parameter. Within that parameter, it
    communicates the set identifier, the throughput threshold and the time limit.
-4. On the last SUBCRIPTION, the client also appends the DTS-ACTIVATION parameter and sets it value to 1. Dynamic track
+4. On the last SUBCRIPTION, the client also appends the DTS-ACTIVATION parameter and sets its value to 1. Dynamic track
    selection is now active for the switching set.
 
 To disable dynamic track selection for a given switching set, the client sends a DTS-ACTIVATION parameter with a state
@@ -133,13 +133,13 @@ with the request ID referencing the subscription it wishes to remove and a SWITC
 Switching set ID of zero.
 
 To add a new track to an existing switching set, the client issues a SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT
-parameter, with the Switching set ID poiniting at the existing switching set.
+parameter, with the Switching set ID pointing at the existing switching set.
 
 ## Relay workflow
 
 1. Upon receiving a SWITCHING-SET-ASSIGNMENT parameter, the relay adds the subscription to the specified switching set,
    creating the switching set if it does not yet exist. The Forward state of the subscription is set to zero.
-2. Upon receiving a DTS-ACTIVATION parameter with a state of 1, the relay beings active track selection.  Active track
+2. Upon receiving a DTS-ACTIVATION parameter with a state of 1, the relay begins active track selection.  Active track
    selection implies that the relay monitor the incoming new groups as well as maintain an estimate of the
    throughput available in the connection. This throughput estimate SHOULD be applicable over the maximum Group duration of the
    tracks being switched.
