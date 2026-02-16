@@ -109,7 +109,7 @@ DTS-ACTIVATION {
 ~~~
 
 * Switching set ID - an integer referencing a previously defined switching set.
-* State - a value of 1 activates dynanmic switching for the specified switching set and a value of 0 deactivates it.
+* State - a value of 1 activates dynamic switching for the specified switching set and a value of 0 deactivates it.
 
 # Workflow
 
