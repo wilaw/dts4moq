@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-02-15T01:43:03.064585+00:00",
+  "timestamp": "2026-02-17T01:26:37.599946+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -49,6 +49,92 @@
       "color": "ffffff"
     }
   ],
-  "issues": [],
-  "pulls": []
+  "issues": [
+    {
+      "number": 2,
+      "id": "I_kwDOROSEss7rKj18",
+      "title": "What happens when publisher sends PUBLISH_DONE?",
+      "url": "https://github.com/wilaw/dts4moq/issues/2",
+      "state": "OPEN",
+      "author": "zafergurel",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "It is not clear about what happens when the original publisher sends a PUBLISH_DONE message for a track in a switching set.\nPresumably, the relay should take it out from the switching set and decide which track to send to the subscriber.",
+      "createdAt": "2026-02-16T01:26:00Z",
+      "updatedAt": "2026-02-16T01:26:13Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 3,
+      "id": "I_kwDOROSEss7rKmDy",
+      "title": "DTS-ACTIVATION in PUBLISH message",
+      "url": "https://github.com/wilaw/dts4moq/issues/3",
+      "state": "OPEN",
+      "author": "zafergurel",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "The text says \"DTS is enabled and disabled by the subscriber\" but the rules are defined by either the subscriber or the original publisher. However, there is nothing in the text that explains how a publisher can set the rules. If it can, the most appropriate message would be PUBLISH IMHO. Also, this makes the use of the word \"client\" reasonable.\n",
+      "createdAt": "2026-02-16T01:30:27Z",
+      "updatedAt": "2026-02-16T01:30:27Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
+  "pulls": [
+    {
+      "number": 1,
+      "id": "PR_kwDOROSEss7D-mFA",
+      "title": "Fixes minor typos",
+      "url": "https://github.com/wilaw/dts4moq/pull/1",
+      "state": "CLOSED",
+      "author": "zafergurel",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2026-02-16T01:22:48Z",
+      "updatedAt": "2026-02-16T01:31:38Z",
+      "baseRepository": "wilaw/dts4moq",
+      "baseRefName": "main",
+      "baseRefOid": "8f01b005a401ef0857fa326001689653b8a59691",
+      "headRepository": "zafergurel/dts4moq",
+      "headRefName": "main",
+      "headRefOid": "8f01b005a401ef0857fa326001689653b8a59691",
+      "closedAt": "2026-02-16T01:31:38Z",
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 4,
+      "id": "PR_kwDOROSEss7D-rsM",
+      "title": "Fixes some minor types",
+      "url": "https://github.com/wilaw/dts4moq/pull/4",
+      "state": "OPEN",
+      "author": "zafergurel",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2026-02-16T01:35:54Z",
+      "updatedAt": "2026-02-16T01:35:54Z",
+      "baseRepository": "wilaw/dts4moq",
+      "baseRefName": "main",
+      "baseRefOid": "8f01b005a401ef0857fa326001689653b8a59691",
+      "headRepository": "zafergurel/dts4moq",
+      "headRefName": "fix/typos",
+      "headRefOid": "c3676ccc3d3513d077abd62b6a5e74a30fd623f7",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    }
+  ]
 }
