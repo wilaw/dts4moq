@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-02-19T01:28:40.130082+00:00",
+  "timestamp": "2026-02-22T01:27:38.792674+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -159,6 +159,22 @@
       "body": "I am not a fan of forcing the Relay to subscribe to many tracks while it only forwards one track downstream. In case of large switching sets, it is a significant burden at the Relay. Furthermore, 99% of the time, Subscribers stick to the highest track, so I hope that the developed clients will not subscribe to all tracks in the altGroup, but only to the subset of tracks that are likely to be used, e.g. the top one (likely to be the preferred one), the second top track (in case of a slight drop of connection) and the lowest (one\u00a0in case of disaster). \n\nThe dynamic management of switching sets is a great vehicle to save resources at the Relay, but it is in the hand of the Subscriber.\n\nShould we add a mechanism such that\n- the Relay declares the maximum number of concurrent subscriptions it can handle in a switching set?\n- the Relay rejects a subscription for a switching set because it is above its capacity?   ",
       "createdAt": "2026-02-18T08:01:33Z",
       "updatedAt": "2026-02-18T08:01:33Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 10,
+      "id": "I_kwDOROSEss7sNyKQ",
+      "title": "First preferred track",
+      "url": "https://github.com/wilaw/dts4moq/issues/10",
+      "state": "OPEN",
+      "author": "gwendalsimon",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "The text says that (in the third bullet) that \"_When the first Object 0 of new Group N of track T arrives at the relay, the relay selects the preferred track to forward from the switching set. The preferred track is the track with the highest throughput threshold smaller than or equal to the current throughput estimate._\" I think it is for the first choice of preferred track. However, the Relay does not know the current throughput estimate (unless it already has a downstream connection to the same Subscriber).\n\nIt could be possible to let the Subscriber indicate the preferred track in the Switching-Set-Assignment with a flag \"default-preferred-track\" which says that the subscription is about the track that should be chosen first at the activation.\nif several tracks are noted as preferred one, then the last one is chosen.\nIt no track is noted as preferred one, then the Relay chooses any of them.",
+      "createdAt": "2026-02-19T13:35:24Z",
+      "updatedAt": "2026-02-19T13:35:24Z",
       "closedAt": null,
       "comments": []
     }
