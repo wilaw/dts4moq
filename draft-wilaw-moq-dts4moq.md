@@ -146,8 +146,8 @@ preferences to relays.
   bandwidth allocation (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}},
   {{usecase-sports}}, {{usecase-teleop}})
 
-- MAY send SUBSCRIBE_UPDATE messages to dynamically adjust priorities based on changing conditions
-  such as active speaker changes, gaze direction updates, or user interaction
+- MAY dynamically adjust priorities based on changing conditions such as active speaker changes,
+  gaze direction updates, or user interaction
   (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-sports}})
 
 - SHOULD specify total bandwidth budget or constraints when applicable (see {{usecase-videoconf}})
@@ -185,7 +185,7 @@ appropriate groups to downstream subscribers.
   reducing quality of lower-priority content before higher-priority content
   (see {{usecase-videoconf}}, {{usecase-screenshare}})
 
-- MUST respond rapidly to SUBSCRIBE_UPDATE messages containing updated priority weights
+- MUST respond rapidly to updated priority weights from subscribers
   (see {{usecase-videoconf}}, {{usecase-vr}}, {{usecase-sports}})
 
 - MUST prioritize forwarding groups for guaranteed streams before performing adaptive allocation
