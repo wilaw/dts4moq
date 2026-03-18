@@ -79,6 +79,20 @@ This section describes the requirements that Dynamic Track Switching places on o
 end subscribers, and relays. These requirements are derived from the use cases described in
 {{usecase-appendix}}.
 
+The use cases cover a range of real-world applications:
+
+- **Single switching set:** A single media source with multiple quality renditions, such as
+  Adaptive Bitrate Streaming ({{usecase-abr}}).
+
+- **Multiple switching sets:** Several concurrent media sources each with quality renditions,
+  requiring bandwidth allocation based on relative priorities—video conferencing
+  ({{usecase-videoconf}}), screen sharing ({{usecase-screenshare}}), and VR/AR streaming
+  ({{usecase-vr}}).
+
+- **Switching set(s) with guaranteed streams:** Adaptive media combined with fixed-bandwidth
+  streams requiring guaranteed delivery—cloud gaming ({{usecase-gaming}}), live sports
+  ({{usecase-sports}}), and teleoperation ({{usecase-teleop}}).
+
 ## Original Publisher Requirements
 
 Original publishers are responsible for producing and advertising media tracks that can be
@@ -288,16 +302,16 @@ This document has no IANA actions.
 
 --- back
 
-# Acknowledgments
-{:numbered="false"}
-
-TODO acknowledge.
-
 # Use Cases {#usecase-appendix}
 
-This appendix describes several use cases that motivate Dynamic Track Switching.
+This appendix describes several use cases that motivate Dynamic Track Switching,
+organized by the complexity of switching set configurations.
 
-## Adaptive Bitrate Streaming (ABR) {#usecase-abr}
+## Single Switching Set
+
+These use cases involve a single media source with multiple quality renditions.
+
+### Adaptive Bitrate Streaming (ABR) {#usecase-abr}
 
 In adaptive bitrate streaming, a single media source (e.g., a live video stream) is encoded
 at multiple quality levels (renditions) with different bitrates and resolutions. The goal is
@@ -348,7 +362,12 @@ bandwidth conditions change.
                          └─────────────────────────────────────────────┘
 ~~~
 
-## Video Conferencing Grid Layout {#usecase-videoconf}
+## Multiple Switching Sets
+
+These use cases involve several concurrent media sources, each with quality renditions,
+requiring bandwidth allocation based on relative priorities.
+
+### Video Conferencing Grid Layout {#usecase-videoconf}
 
 In a video conference with multiple participants, each participant's video may be displayed
 in a grid layout. When many participants are present, not all videos can be displayed at
@@ -407,7 +426,7 @@ the total available bandwidth.
 └──────────────────────────────────────────────────────────────────────────────┘
 ~~~
 
-## Screen Sharing with Video {#usecase-screenshare}
+### Screen Sharing with Video {#usecase-screenshare}
 
 A participant shares their screen while also transmitting camera video. The screen content
 may have different characteristics than camera video (e.g., higher resolution for text
@@ -463,7 +482,7 @@ camera video quality before reducing screen share quality when bandwidth becomes
 └──────────────────────────────────────────────────────────────────────────────┘
 ~~~
 
-## VR/AR Streaming {#usecase-vr}
+### VR/AR Streaming {#usecase-vr}
 
 Virtual and augmented reality applications require streaming high-resolution immersive content
 while adapting to available bandwidth. Two key scenarios benefit from DTS: foveated rendering
@@ -521,7 +540,12 @@ deliver high quality for the gaze tile while maintaining lower quality for surro
 └──────────────────────────────────────────────────────────────────────────────┘
 ~~~
 
-## Cloud Gaming {#usecase-gaming}
+## Switching Set(s) with Guaranteed Streams
+
+These use cases combine adaptive media with fixed-bandwidth streams that require
+guaranteed delivery.
+
+### Cloud Gaming {#usecase-gaming}
 
 Cloud gaming services stream rendered game video from servers to players. The video stream
 must adapt to network conditions while balancing resolution, frame rate, and latency based
@@ -586,7 +610,7 @@ throughout the forwarding path.
 └──────────────────────────────────────────────────────────────────────────────┘
 ~~~
 
-## Live Sports Multi-View {#usecase-sports}
+### Live Sports Multi-View {#usecase-sports}
 
 Live sports broadcasts offer multiple camera angles: main game camera, sideline cameras,
 aerial views, and isolated player cameras. Viewers may want to watch multiple angles
@@ -644,7 +668,7 @@ promptly to priority changes.
 └──────────────────────────────────────────────────────────────────────────────┘
 ~~~
 
-## Teleoperation and Robotics {#usecase-teleop}
+### Teleoperation and Robotics {#usecase-teleop}
 
 Remote operation of robots, drones, or industrial equipment requires streaming multiple
 video feeds with different importance levels. The primary control camera (showing the
@@ -701,3 +725,8 @@ and allocates remaining capacity to situational cameras.
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ~~~
+
+# Acknowledgments
+{:numbered="false"}
+
+TODO acknowledge.
