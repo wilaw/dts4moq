@@ -77,28 +77,10 @@ Copyright Notice
 Table of Contents
 
    1.  Introduction
-   2.  Use Cases
-     2.1.  Adaptive Bitrate Streaming (ABR)
-       2.1.1.  Description
-       2.1.2.  Requirements
-     2.2.  Video Conferencing Grid Layout
-       2.2.1.  Description
-       2.2.2.  Requirements
-     2.3.  Screen Sharing with Video
-       2.3.1.  Description
-       2.3.2.  Requirements
-     2.4.  VR/AR Streaming
-       2.4.1.  Description
-       2.4.2.  Requirements
-     2.5.  Cloud Gaming
-       2.5.1.  Description
-       2.5.2.  Requirements
-     2.6.  Live Sports Multi-View
-       2.6.1.  Description
-       2.6.2.  Requirements
-     2.7.  Teleoperation and Robotics
-       2.7.1.  Description
-       2.7.2.  Requirements
+   2.  Requirements
+     2.1.  Original Publisher Requirements
+     2.2.  End Subscriber Requirements
+     2.3.  Relay Requirements
    3.  Subscribe parameters
      3.1.  The SWITCHING-SET-ASSIGNMENT parameter
      3.2.  The DTS-ACTIVATION parameter.
@@ -109,6 +91,17 @@ Table of Contents
    6.  Security Considerations
    7.  IANA Considerations
    8.  Normative References
+   Appendix A.  Use Cases
+     A.1.  Single Switching Set
+       A.1.1.  Adaptive Bitrate Streaming (ABR)
+     A.2.  Multiple Switching Sets
+       A.2.1.  Video Conferencing Grid Layout
+       A.2.2.  Screen Sharing with Video
+       A.2.3.  VR/AR Streaming
+     A.3.  Switching Set(s) with Guaranteed Streams
+       A.3.1.  Cloud Gaming
+       A.3.2.  Live Sports Multi-View
+       A.3.3.  Teleoperation and Robotics
    Acknowledgments
    Authors' Addresses
 
@@ -127,649 +120,153 @@ Table of Contents
    rules are defined by either the subscriber or the original
    punblisher.
 
-2.  Use Cases
+2.  Requirements
 
-   This section describes several use cases that motivate Dynamic Track
-   Switching, along with the requirements each places on publishers,
-   subscribers, and relays.
+   This section describes the requirements that Dynamic Track Switching
+   places on original publishers, end subscribers, and relays.  These
+   requirements are derived from the use cases described in Appendix A.
 
-2.1.  Adaptive Bitrate Streaming (ABR)
+   The use cases cover a range of real-world applications:
 
-2.1.1.  Description
+   *  *Single switching set:* A single media source with multiple
+      quality renditions, such as Adaptive Bitrate Streaming
+      (Appendix A.1.1).
 
-   In adaptive bitrate streaming, a single media source (e.g., a live
-   video stream) is encoded at multiple quality levels (renditions) with
-   different bitrates and resolutions.  The goal is to deliver the
-   highest quality rendition that the network path can sustain at any
-   given moment.  When bandwidth decreases, the system should switch to
-   a lower quality rendition to avoid rebuffering.  When bandwidth
-   increases, it should switch to a higher quality rendition to improve
-   viewer experience.
+   *  *Multiple switching sets:* Several concurrent media sources each
+      with quality renditions, requiring bandwidth allocation based on
+      relative priorities—video conferencing (Appendix A.2.1), screen
+      sharing (Appendix A.2.2), and VR/AR streaming (Appendix A.2.3).
 
-                         ┌────────────────────────────────────────────┐
-                         │           Original Publisher               │
-                         │                                            │
-                         │  ┌─────────┐  ┌─────────┐  ┌─────────┐     │
-                         │  │ 1080p   │  │  720p   │  │  480p   │     │
-                         │  │ 5 Mbps  │  │ 2 Mbps  │  │ 800kbps │     │
-                         │  │ prio: 1 │  │ prio: 2 │  │ prio: 3 │     │
-                         │  └────┬────┘  └────┬────┘  └────┬────┘     │
-                         │       │            │            │          │
-                         └───────┼────────────┼────────────┼──────────┘
-                                 │            │            │
-                                 ▼            ▼            ▼
-                         ┌─────────────────────────────────────────────┐
-                         │                  Relay                      │
-                         │                                             │
-                         │   Receives all renditions, selects one      │
-                         │   based on publisher priorities and         │
-                         │   downstream bandwidth                      │
-                         └────────────────────┬────────────────────────┘
-                                              │
-                                              │  Selected rendition
-                                              │  (e.g., 720p @ 2 Mbps)
-                                              ▼
-                         ┌─────────────────────────────────────────────┐
-                         │              End Subscriber                 │
-                         │                                             │
-                         │   Receives single stream, quality varies    │
-                         │   based on available bandwidth              │
-                         │                                             │
-                         └─────────────────────────────────────────────┘
+   *  *Switching set(s) with guaranteed streams:* Adaptive media
+      combined with fixed-bandwidth streams requiring guaranteed
+      delivery—cloud gaming (Appendix A.3.1), live sports
+      (Appendix A.3.2), and teleoperation (Appendix A.3.3).
 
-2.1.2.  Requirements
+2.1.  Original Publisher Requirements
 
-   *Original Publisher*:
+   Original publishers are responsible for producing and advertising
+   media tracks that can be dynamically switched by relays.
 
    *  MUST publish multiple time-aligned renditions of the same content
+      at different quality levels (see Appendix A.1.1, Appendix A.2.1,
+      Appendix A.2.2, Appendix A.2.3, Appendix A.3.1, Appendix A.3.2,
+      Appendix A.3.3)
 
    *  MUST ensure groups across renditions are temporally aligned to
-      enable seamless switching
+      enable seamless switching at group boundaries (see Appendix A.1.1,
+      Appendix A.2.1, Appendix A.2.3, Appendix A.3.2)
 
-   *  SHOULD advertise throughput requirements for each rendition
+   *  SHOULD advertise throughput requirements for each rendition to
+      enable bandwidth-based selection (see Appendix A.1.1,
+      Appendix A.2.1, Appendix A.2.2, Appendix A.2.3, Appendix A.3.1,
+      Appendix A.3.2, Appendix A.3.3)
 
-   *  SHOULD indicate which tracks belong to the same switching set
-      (alternate group)
+   *  SHOULD indicate which tracks belong to the same switching set or
+      alternate group (see Appendix A.1.1, Appendix A.2.1)
 
-   *End Subscriber*:
+   *  SHOULD indicate content type characteristics and relative
+      priorities when publishing multiple content types (see
+      Appendix A.2.2, Appendix A.3.1, Appendix A.3.3)
+
+   *  SHOULD publish guaranteed or fixed-bandwidth streams (such as HUD
+      overlays, stats, or telemetry) as separate tracks when bandwidth
+      guarantees are needed (see Appendix A.3.1, Appendix A.3.2,
+      Appendix A.3.3)
+
+   *  SHOULD minimize encoding latency for latency-critical streams such
+      as control cameras or interactive game video (see Appendix A.3.1,
+      Appendix A.3.3)
+
+   *  MUST ensure all streams share a common time reference when
+      temporal synchronization across multiple streams is required (see
+      Appendix A.3.2, Appendix A.3.3)
+
+   *  SHOULD indicate spatial relationships or layer hierarchy when
+      applicable (see Appendix A.2.3)
+
+2.2.  End Subscriber Requirements
+
+   End subscribers are responsible for establishing subscriptions and
+   communicating switching preferences to relays.
 
    *  MUST subscribe to all desired renditions within a switching set
+      and indicate which subscriptions form a switching set for relay
+      coordination (see Appendix A.1.1)
 
-   *  MUST indicate which subscriptions form a switching set for relay
-      coordination
+   *  MUST be prepared to decode any rendition within the switching set
+      (see Appendix A.1.1)
 
-   *  MAY specify preferences such as maximum desired quality or
-      bandwidth constraints
+   *  MUST subscribe to multiple switching sets simultaneously when
+      receiving multiple independent streams (see Appendix A.2.1,
+      Appendix A.2.2, Appendix A.2.3, Appendix A.3.1, Appendix A.3.2,
+      Appendix A.3.3)
 
-   *  SHOULD be prepared to decode any rendition within the switching
-      set
+   *  MUST indicate relative importance, weight, or priority for each
+      switching set to guide relay bandwidth allocation (see
+      Appendix A.2.1, Appendix A.2.2, Appendix A.2.3, Appendix A.3.2,
+      Appendix A.3.3)
 
-   *Relay*:
+   *  MAY dynamically adjust priorities based on changing conditions
+      such as active speaker changes, gaze direction updates, or user
+      interaction (see Appendix A.2.1, Appendix A.2.2, Appendix A.2.3,
+      Appendix A.3.2)
 
-   *  MUST track available bandwidth to each downstream subscriber
+   *  SHOULD specify total bandwidth budget or constraints when
+      applicable (see Appendix A.2.1)
+
+   *  MAY specify minimum acceptable quality thresholds for critical
+      content (see Appendix A.2.2, Appendix A.2.3, Appendix A.3.2)
+
+   *  SHOULD specify latency requirements for latency-critical streams
+      (see Appendix A.3.1, Appendix A.3.3)
+
+2.3.  Relay Requirements
+
+   Relays are responsible for making dynamic track selection decisions
+   and forwarding the appropriate groups to downstream subscribers.
+
+   *  MUST track available bandwidth to each downstream subscriber (see
+      Appendix A.1.1)
 
    *  MUST select exactly one rendition per switching set to forward at
-      any time
+      any given time (see Appendix A.1.1, Appendix A.2.1,
+      Appendix A.2.2, Appendix A.2.3, Appendix A.3.1, Appendix A.3.2,
+      Appendix A.3.3)
 
    *  MUST switch renditions at group boundaries to maintain
-      decodability
-
-   *  SHOULD minimize switching latency when bandwidth changes
-
-2.2.  Video Conferencing Grid Layout
-
-2.2.1.  Description
-
-   In a video conference with multiple participants, each participant's
-   video may be displayed in a grid layout.  When many participants are
-   present, not all videos can be displayed at full resolution due to
-   screen real estate and bandwidth constraints.  The system needs to
-   deliver multiple participant streams simultaneously, potentially at
-   different quality levels based on their importance (e.g., active
-   speaker at high quality, other participants at lower quality).
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                          Original Publishers                                 │
-│                                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │ Participant │  │ Participant │  │ Participant │  │ Participant │   ...    │
-│  │     A       │  │     B       │  │     C       │  │     D       │          │
-│  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │          │
-│  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │          │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
-│         │                │                │                │                 │
-└─────────┼────────────────┼────────────────┼────────────────┼─────────────────┘
-          │                │                │                │
-          ▼                ▼                ▼                ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Allocates bandwidth across multiple switching sets (participants)          │
-│   Selects quality per participant based on:                                  │
-│     - Publisher-indicated rendition priorities                               │
-│     - Total available bandwidth                                              │
-│     - Subscriber-indicated priorities/weights                                │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Multiple streams at varying qualities
-                                      │  (e.g., A@hi, B@med, C@lo, D@lo)
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             End Subscriber                                   │
-│                                                                              │
-│   ┌───────────────────────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐       │
-│   │                           │  │         │  │         │  │         │       │
-│   │     Participant A         │  │  Part B │  │  Part C │  │  Part D │       │
-│   │     (high quality)        │  │  (med)  │  │  (low)  │  │  (low)  │       │
-│   │                           │  │         │  │         │  │         │       │
-│   └───────────────────────────┘  └─────────┘  └─────────┘  └─────────┘       │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-2.2.2.  Requirements
-
-   *Original Publisher*:
-
-   *  MUST publish multiple quality renditions for their media stream
-
-   *  MUST ensure temporal alignment of groups across renditions
-
-   *  SHOULD advertise throughput requirements for each rendition
-
-   *  SHOULD indicate switching set membership for their renditions
-
-   *End Subscriber*:
-
-   *  MUST subscribe to multiple switching sets (one per participant)
-
-   *  MUST indicate relative importance (weight/priority) of each
-      switching set
-
-   *  MAY send SUBSCRIBE_UPDATE messages to adjust priorities (e.g.,
-      when active speaker changes)
-
-   *  SHOULD specify total bandwidth budget or constraints
-
-   *Relay*:
+      decodability (see Appendix A.1.1, Appendix A.2.1, Appendix A.2.3,
+      Appendix A.3.1, Appendix A.3.2, Appendix A.3.3)
 
    *  MUST allocate forwarding capacity across multiple switching sets
-      simultaneously
-
-   *  MUST respect subscriber-indicated weights when selecting groups to
-      forward
-
-   *  MUST select one rendition per switching set based on allocated
-      capacity
-
-   *  SHOULD implement degradation based on relative weight when total
-      capacity is insufficient
-
-   *  SHOULD respond to SUBSCRIBE_UPDATE messages with minimal latency
-
-2.3.  Screen Sharing with Video
-
-2.3.1.  Description
-
-   A participant shares their screen while also transmitting camera
-   video.  The screen content may have different characteristics than
-   camera video (e.g., higher resolution for text readability, lower
-   frame rate acceptable).  The system needs to prioritize bandwidth
-   between screen sharing and camera video based on content type and
-   subscriber preferences.
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            Original Publisher                                │
-│                                                                              │
-│   ┌─────────────────────────────┐      ┌─────────────────────────────┐       │
-│   │      Screen Share           │      │      Camera Video           │       │
-│   │      (prio: high)           │      │      (prio: low)            │       │
-│   │  ┌───────┐ ┌───────┐        │      │  ┌───────┐ ┌───────┐        │       │
-│   │  │1080p  │ │ 720p  │        │      │  │ 720p  │ │ 360p  │        │       │
-│   │  │2 Mbps │ │800kbps│        │      │  │1.5Mbps│ │400kbps│        │       │
-│   │  │prio:1 │ │prio:2 │        │      │  │prio:3 │ │prio:4 │        │       │
-│   │  └───┬───┘ └───┬───┘        │      │  └───┬───┘ └───┬───┘        │       │
-│   │      │         │            │      │      │         │            │       │
-│   └──────┼─────────┼────────────┘      └──────┼─────────┼────────────┘       │
-│          │         │                          │         │                    │
-└──────────┼─────────┼──────────────────────────┼─────────┼────────────────────┘
-           │         │                          │         │
-           ▼         ▼                          ▼         ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Manages two switching sets with publisher-indicated content priorities     │
-│   Allocates bandwidth based on content type and rendition priorities         │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Screen@1080p + Camera@360p
-                                      │  (prioritizing screen readability)
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             End Subscriber                                   │
-│                                                                              │
-│   ┌───────────────────────────────────────────┐  ┌────────────────────┐      │
-│   │                                           │  │                    │      │
-│   │           Screen Share                    │  │   Camera (small)   │      │
-│   │           (high quality for text)         │  │   (lower quality)  │      │
-│   │                                           │  │                    │      │
-│   └───────────────────────────────────────────┘  └────────────────────┘      │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-2.3.2.  Requirements
-
-   *Original Publisher*:
-
-   *  MUST publish renditions for each content type (screen, camera)
-
-   *  MUST ensure groups are temporally aligned within each content type
-
-   *  SHOULD indicate content type characteristics including relative
-      priorities per content type (e.g., screen vs camera) and per
-      rendition within each type
-
-   *  SHOULD advertise throughput requirements per rendition
-
-   *End Subscriber*:
-
-   *  MUST subscribe to switching sets for each desired content type
-
-   *  MUST indicate relative weights between content types
-
-   *  MAY specify minimum acceptable quality for critical content (e.g.,
-      screen)
-
-   *  MAY send SUBSCRIBE_UPDATE messages to adjust priorities based on
-      presentation mode
-
-   *Relay*:
-
-   *  MUST manage multiple switching sets with potentially different
-      priorities
-
-   *  MUST select groups to forward based on content type priorities
-
-   *  SHOULD respect minimum quality thresholds indicated in
-      subscription parameters
-
-   *  SHOULD degrade lower-priority content before higher-priority
-      content
-
-2.4.  VR/AR Streaming
-
-2.4.1.  Description
-
-   Virtual and augmented reality applications require streaming high-
-   resolution immersive content while adapting to available bandwidth.
-   Two key scenarios benefit from DTS: foveated rendering where quality
-   varies based on gaze direction, and multi-layer environments where
-   different scene elements have different quality requirements.
-
-   In foveated rendering, a 360-degree video is divided into tiles.  The
-   tile where the user is currently looking (determined by eye tracking)
-   receives highest quality, while peripheral tiles receive lower
-   quality.  As the user's gaze shifts, bandwidth allocation must
-   dynamically shift between tiles.
-
-   In multi-layer VR environments, background scenery may be rendered at
-   lower quality while interactive foreground objects receive higher
-   quality, with priorities adjusting based on user proximity and
-   interaction state.
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                          VR Headset (Publisher)                              │
-│                                                                              │
-│   360° Video Tiles (each with quality variants and priorities)               │
-│   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                │
-│   │ Tile 1  │ │ Tile 2  │ │ Tile 3  │ │ Tile 4  │ │ Tile 5  │  ...           │
-│   │hi/lo    │ │hi/lo    │ │hi/lo    │ │hi/lo    │ │hi/lo    │                │
-│   │prio:1/2 │ │prio:1/2 │ │prio:1/2 │ │prio:1/2 │ │prio:1/2 │                │
-│   └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘                │
-│        │           │     [GAZE]│           │           │                     │
-└────────┼───────────┼───────────┼───────────┼───────────┼─────────────────────┘
-         │           │           │           │           │
-         ▼           ▼           ▼           ▼           ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Uses publisher rendition priorities within each tile                       │
-│   Receives gaze direction updates from subscriber                            │
-│   Allocates bandwidth: high quality to gaze tile, lower to periphery         │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Tile3@hi, others@lo
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             End Subscriber                                   │
-│                                                                              │
-│   ┌─────────────────────────────────────────────────────────────────┐        │
-│   │                      360° Rendered View                         │        │
-│   │  ┌──────┐ ┌──────┐ ┌────────────────┐ ┌──────┐ ┌──────┐         │        │
-│   │  │ lo   │ │ lo   │ │      hi        │ │ lo   │ │ lo   │         │        │
-│   │  │      │ │      │ │   (gaze area)  │ │      │ │      │         │        │
-│   │  └──────┘ └──────┘ └────────────────┘ └──────┘ └──────┘         │        │
-│   └─────────────────────────────────────────────────────────────────┘        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-2.4.2.  Requirements
-
-   *Original Publisher*:
-
-   *  MUST publish multiple quality renditions for each tile or scene
-      layer
-
-   *  MUST ensure temporal alignment across tiles and quality levels
-
-   *  SHOULD advertise throughput requirements per tile/quality
-      combination
-
-   *  SHOULD indicate tile spatial relationships or layer hierarchy
-
-   *End Subscriber*:
-
-   *  MUST subscribe to all tiles within the field of view
-
-   *  MUST send SUBSCRIBE_UPDATE messages to adjust priority weights
-      based on gaze direction or interaction state
-
-   *  SHOULD specify gaze tile with significantly higher weight than
-      peripheral tiles
-
-   *  MAY specify minimum acceptable quality for peripheral tiles to
-      avoid visible artifacts
-
-   *Relay*:
-
-   *  MUST respond rapidly to SUBSCRIBE_UPDATE messages containing
-      updated priority weights
-
-   *  MUST adjust group forwarding decisions across tile subscriptions
-      when priority weights change
-
-   *  SHOULD maintain subscriptions to adjacent tiles at lower priority
-      to enable smooth transitions
-
-   *  MUST switch forwarded renditions at group boundaries to ensure
-      decodability
-
-2.5.  Cloud Gaming
-
-2.5.1.  Description
-
-   Cloud gaming services stream rendered game video from servers to
-   players.  The video stream must adapt to network conditions while
-   balancing resolution, frame rate, and latency based on game type and
-   player preferences.  Different game genres have different
-   requirements: fast-paced action games prioritize frame rate and low
-   latency, while strategy games may prioritize resolution.
-
-   Additionally, different regions of the game screen may have different
-   importance: the HUD (heads-up display) with critical game information
-   may need guaranteed quality, while the main game world adapts to
-   remaining bandwidth.
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         Game Server (Publisher)                              │
-│                                                                              │
-│   ┌─────────────────────────────────┐  ┌─────────────────────────────┐       │
-│   │       Game World Video          │  │      HUD/Overlay            │       │
-│   │       (prio: low)               │  │      (prio: high)           │       │
-│   │  ┌───────┐ ┌───────┐ ┌───────┐  │  │  ┌───────┐                  │       │
-│   │  │4K/60  │ │1080/60│ │720/60 │  │  │  │ Fixed │                  │       │
-│   │  │25Mbps │ │8 Mbps │ │3 Mbps │  │  │  │200kbps│                  │       │
-│   │  │prio:1 │ │prio:2 │ │prio:3 │  │  │  └───┬───┘                  │       │
-│   │  └───┬───┘ └───┬───┘ └───┬───┘  │  │      │                      │       │
-│   └──────┼─────────┼─────────┼──────┘  └──────┼──────────────────────┘       │
-│          │         │         │                │                              │
-└──────────┼─────────┼─────────┼─────────────── ┼──────────────────────────────┘
-           │         │         │                │
-           ▼         ▼         ▼                ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Uses publisher priorities: HUD (high) + game video renditions (1/2/3)      │
-│   Reserves HUD bandwidth first, selects game quality from remainder          │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Game@1080/60 + HUD@fixed
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              Player (Subscriber)                             │
-│                                                                              │
-│   ┌─────────────────────────────────────────────────────────────────┐        │
-│   │  ┌─────────────────────────────────────────────────────────┐    │        │
-│   │  │                                                         │    │        │
-│   │  │                    Game World                           │    │        │
-│   │  │                  (adaptive quality)                     │    │        │
-│   │  │                                                         │    │        │
-│   │  └─────────────────────────────────────────────────────────┘    │        │
-│   │  ┌─────────────────┐                      ┌─────────────────┐   │        │
-│   │  │ Health: ████░░  │                      │  Ammo: 30/120   │   │        │
-│   │  └─────────────────┘    HUD (guaranteed)  └─────────────────┘   │        │
-│   └─────────────────────────────────────────────────────────────────┘        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-2.5.2.  Requirements
-
-   *Original Publisher*:
-
-   *  MUST publish multiple quality renditions of game video
-
-   *  MUST ensure consistent frame pacing across quality levels
-
-   *  SHOULD separate HUD/overlay into distinct tracks when bandwidth
-      guarantees are needed
-
-   *  SHOULD advertise throughput and latency characteristics per
-      rendition
-
-   *  MAY indicate game type hints affecting quality/latency tradeoffs
-
-   *End Subscriber*:
-
-   *  MUST subscribe to game video switching set and any separate HUD
-      tracks
-
-   *  MUST indicate priorities (e.g., HUD guaranteed, game video
-      adaptive)
-
-   *  MAY specify preferences for frame rate vs resolution tradeoffs
-
-   *  SHOULD report input latency requirements to influence relay
-      decisions
-
-   *Relay*:
-
-   *  MUST prioritize forwarding groups for guaranteed streams (HUD)
-      before adaptive allocation
-
-   *  MUST select game video rendition to forward based on remaining
-      capacity
-
-   *  SHOULD minimize switching latency to maintain gameplay
-      responsiveness
-
-   *  MUST switch forwarded renditions at group boundaries to ensure
-      decodability
-
-2.6.  Live Sports Multi-View
-
-2.6.1.  Description
-
-   Live sports broadcasts offer multiple camera angles: main game
-   camera, sideline cameras, aerial views, and isolated player cameras.
-   Viewers may want to watch multiple angles simultaneously, with the
-   ability to prioritize different views.  A stats overlay stream
-   provides real-time game information.  Bandwidth must be allocated
-   across these streams based on viewer preferences that may change
-   during the event (e.g., switching focus to replay angle).
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         Broadcast Origin (Publisher)                         │
-│                                                                              │
-│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
-│  │  Main Camera  │ │   Sideline    │ │    Aerial     │ │  Stats/Score  │     │
-│  │  hi/med/lo    │ │  hi/med/lo    │ │  hi/med/lo    │ │   (fixed)     │     │
-│  │  prio:1/2/3   │ │  prio:1/2/3   │ │  prio:1/2/3   │ │  prio: high   │     │
-│  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
-│          │                 │                 │                 │             │
-└──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
-           │                 │                 │                 │
-           ▼                 ▼                 ▼                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Uses publisher priorities: renditions (1/2/3), stats (high)                │
-│   Allocates bandwidth based on subscriber-selected camera priorities         │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Main@hi, Sideline@med, Aerial@lo, Stats
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             Viewer (Subscriber)                              │
-│                                                                              │
-│   ┌────────────────────────────────────────┐  ┌──────────────────────┐       │
-│   │                                        │  │    Sideline View     │       │
-│   │           Main Camera View             │  │    (medium quality)  │       │
-│   │           (high quality)               │  ├──────────────────────┤       │
-│   │                                        │  │    Aerial View       │       │
-│   │                                        │  │    (low quality)     │       │
-│   └────────────────────────────────────────┘  └──────────────────────┘       │
-│   ┌─────────────────────────────────────────────────────────────────┐        │
-│   │  SCORE: Home 2 - Away 1  |  Time: 73:24  |  Possession: 58%     │        │
-│   └─────────────────────────────────────────────────────────────────┘        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-2.6.2.  Requirements
-
-   *Original Publisher*:
-
-   *  MUST publish multiple quality renditions for each camera angle
-
-   *  MUST ensure temporal synchronization across all camera angles
-
-   *  SHOULD advertise throughput requirements per angle/quality
-      combination
-
-   *  MAY publish stats overlay as separate low-bandwidth guaranteed
-      stream
-
-   *End Subscriber*:
-
-   *  MUST subscribe to desired camera angles and stats overlay
-
-   *  MUST indicate relative priority/weight for each camera angle
-
-   *  MAY send SUBSCRIBE_UPDATE messages to adjust priorities (e.g.,
-      boost replay camera during highlights)
-
-   *  SHOULD specify minimum acceptable quality for primary view
-
-   *Relay*:
-
-   *  MUST select groups to forward based on subscriber-indicated
-      weights
-
-   *  MUST maintain temporal sync when forwarding multiple angles
-
-   *  SHOULD respond to SUBSCRIBE_UPDATE messages promptly for seamless
-      view switching
-
-   *  MUST switch forwarded renditions at group boundaries to ensure
-      decodability
-
-2.7.  Teleoperation and Robotics
-
-2.7.1.  Description
-
-   Remote operation of robots, drones, or industrial equipment requires
-   streaming multiple video feeds with different importance levels.  The
-   primary control camera (showing the manipulation task) requires
-   highest quality and lowest latency.  Secondary cameras providing
-   situational awareness can accept lower quality.  Sensor telemetry
-   streams compete for bandwidth with video feeds.
-
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           Robot (Publisher)                                  │
-│                                                                              │
-│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
-│  │ Primary Cam   │ │  Left Cam     │ │  Right Cam    │ │  Telemetry    │     │
-│  │ (manipulation)│ │ (situational) │ │ (situational) │ │  (sensors)    │     │
-│  │  prio: high   │ │  prio: low    │ │  prio: low    │ │  prio: high   │     │
-│  │  hi/med/lo    │ │  hi/lo        │ │  hi/lo        │ │  (fixed)      │     │
-│  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
-│          │                 │                 │                 │             │
-└──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
-           │                 │                 │                 │
-           ▼                 ▼                 ▼                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Publisher priorities: content type (high/low) + renditions (1/2/3)         │
-│   Latency-critical: minimize delay for primary control feed                  │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Primary@hi, Left@lo, Right@lo, Telemetry
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         Operator Console (Subscriber)                        │
-│                                                                              │
-│   ┌────────────────────────────────────────────────────────────────┐         │
-│   │                                                                │         │
-│   │              Primary Camera (high quality, low latency)        │         │
-│   │                                                                │         │
-│   └────────────────────────────────────────────────────────────────┘         │
-│   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
-│   │   Left Camera    │  │   Right Camera   │  │   Telemetry      │           │
-│   │   (low quality)  │  │   (low quality)  │  │ Temp: 45°C       │           │
-│   │                  │  │                  │  │ Battery: 73%     │           │
-│   └──────────────────┘  └──────────────────┘  └──────────────────┘           │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-2.7.2.  Requirements
-
-   *Original Publisher*:
-
-   *  MUST publish multiple quality renditions for each camera
-
-   *  MUST minimize encoding latency for primary control camera
-
-   *  SHOULD publish sensor telemetry as separate guaranteed stream
-
-   *  MUST ensure all streams share common time reference for
-      synchronization
-
-   *End Subscriber*:
-
-   *  MUST subscribe to primary camera with highest priority
-
-   *  MUST subscribe to telemetry with guaranteed bandwidth reservation
-
-   *  MAY subscribe to situational cameras with lower priority
-
-   *  SHOULD specify latency requirements for control-critical streams
-
-   *Relay*:
-
-   *  MUST prioritize latency for primary control camera
-
-   *  MUST prioritize forwarding groups for guaranteed telemetry stream
-
-   *  SHOULD allocate remaining forwarding capacity to situational
-      cameras
-
-   *  MUST switch forwarded renditions at group boundaries to ensure
-      decodability
+      simultaneously when serving subscribers with multiple concurrent
+      streams (see Appendix A.2.1, Appendix A.2.2, Appendix A.2.3,
+      Appendix A.3.1, Appendix A.3.2, Appendix A.3.3)
+
+   *  MUST respect subscriber-indicated weights and priorities when
+      selecting groups to forward (see Appendix A.2.1, Appendix A.2.2,
+      Appendix A.3.2)
+
+   *  SHOULD implement degradation based on relative weights when total
+      capacity is insufficient, reducing quality of lower-priority
+      content before higher-priority content (see Appendix A.2.1,
+      Appendix A.2.2)
+
+   *  MUST respond rapidly to updated priority weights from subscribers
+      (see Appendix A.2.1, Appendix A.2.3, Appendix A.3.2)
+
+   *  MUST prioritize forwarding groups for guaranteed streams before
+      performing adaptive allocation for other streams (see
+      Appendix A.3.1, Appendix A.3.2, Appendix A.3.3)
+
+   *  MUST prioritize latency for latency-critical streams such as
+      control cameras or interactive game video (see Appendix A.3.1,
+      Appendix A.3.3)
+
+   *  MUST maintain temporal synchronization when forwarding multiple
+      related streams (see Appendix A.3.2, Appendix A.3.3)
+
+   *  SHOULD minimize switching latency when bandwidth conditions change
+      (see Appendix A.1.1)
 
 3.  Subscribe parameters
 
@@ -934,6 +431,445 @@ Table of Contents
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+Appendix A.  Use Cases
+
+   This appendix describes several use cases that motivate Dynamic Track
+   Switching, organized by the complexity of switching set
+   configurations.
+
+A.1.  Single Switching Set
+
+   These use cases involve a single media source with multiple quality
+   renditions.
+
+A.1.1.  Adaptive Bitrate Streaming (ABR)
+
+   In adaptive bitrate streaming, a single media source (e.g., a live
+   video stream) is encoded at multiple quality levels (renditions) with
+   different bitrates and resolutions.  The goal is to deliver the
+   highest quality rendition that the network path can sustain at any
+   given moment.  When bandwidth decreases, the system should switch to
+   a lower quality rendition to avoid rebuffering.  When bandwidth
+   increases, it should switch to a higher quality rendition to improve
+   viewer experience.
+
+   The original publisher encodes the content into multiple renditions
+   (e.g., 1080p at 5 Mbps, 720p at 2 Mbps, 480p at 800 kbps) and
+   publishes each as a separate track with temporal alignment at group
+   boundaries.  The publisher/subscriber advertises the throughput
+   requirements and indicates that these tracks form a switching set.
+   The end subscriber subscribes to all renditions in the switching set
+   and receives whichever rendition the relay selects.  The relay
+   monitors downstream bandwidth, selects the highest quality rendition
+   that fits within the available capacity, and switches to a different
+   rendition at group boundaries when bandwidth conditions change.
+
+                         ┌────────────────────────────────────────────┐
+                         │           Original Publisher               │
+                         │                                            │
+                         │  ┌─────────┐  ┌─────────┐  ┌─────────┐     │
+                         │  │ 1080p   │  │  720p   │  │  480p   │     │
+                         │  │ 5 Mbps  │  │ 2 Mbps  │  │ 800kbps │     │
+                         │  │ prio: 1 │  │ prio: 2 │  │ prio: 3 │     │
+                         │  └────┬────┘  └────┬────┘  └────┬────┘     │
+                         │       │            │            │          │
+                         └───────┼────────────┼────────────┼──────────┘
+                                 │            │            │
+                                 ▼            ▼            ▼
+                         ┌─────────────────────────────────────────────┐
+                         │                  Relay                      │
+                         │                                             │
+                         │   Receives all renditions, selects one      │
+                         │   based on publisher priorities and         │
+                         │   downstream bandwidth                      │
+                         └────────────────────┬────────────────────────┘
+                                              │
+                                              │  Selected rendition
+                                              │  (e.g., 720p @ 2 Mbps)
+                                              ▼
+                         ┌─────────────────────────────────────────────┐
+                         │              End Subscriber                 │
+                         │                                             │
+                         │   Receives single stream, quality varies    │
+                         │   based on available bandwidth              │
+                         │                                             │
+                         └─────────────────────────────────────────────┘
+
+A.2.  Multiple Switching Sets
+
+   These use cases involve several concurrent media sources, each with
+   quality renditions, requiring bandwidth allocation based on relative
+   priorities.
+
+A.2.1.  Video Conferencing Grid Layout
+
+   In a video conference with multiple participants, each participant's
+   video may be displayed in a grid layout.  When many participants are
+   present, not all videos can be displayed at full resolution due to
+   screen real estate and bandwidth constraints.  The system needs to
+   deliver multiple participant streams simultaneously, potentially at
+   different quality levels based on their importance (e.g., active
+   speaker at high quality, other participants at lower quality).
+
+   Each original publisher (participant) encodes their video at multiple
+   quality levels and publishes these as a switching set.  The end
+   subscriber subscribes to multiple switching sets (one per
+   participant) and assigns relative weights to indicate importance—for
+   example, giving the active speaker higher weight than other
+   participants.  When the active speaker changes, the subscriber adjust
+   relative weights.  The relay allocates its forwarding capacity across
+   all switching sets according to the subscriber-indicated weights,
+   selecting appropriate quality levels for each participant stream to
+   fit within the total available bandwidth.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          Original Publishers                                 │
+│                                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │ Participant │  │ Participant │  │ Participant │  │ Participant │   ...    │
+│  │     A       │  │     B       │  │     C       │  │     D       │          │
+│  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │          │
+│  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │          │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
+│         │                │                │                │                 │
+└─────────┼────────────────┼────────────────┼────────────────┼─────────────────┘
+          │                │                │                │
+          ▼                ▼                ▼                ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Allocates bandwidth across multiple switching sets (participants)          │
+│   Selects quality per participant based on:                                  │
+│     - Publisher-indicated rendition priorities                               │
+│     - Total available bandwidth                                              │
+│     - Subscriber-indicated priorities/weights                                │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Multiple streams at varying qualities
+                                      │  (e.g., A@hi, B@med, C@lo, D@lo)
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             End Subscriber                                   │
+│                                                                              │
+│   ┌───────────────────────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐       │
+│   │                           │  │         │  │         │  │         │       │
+│   │     Participant A         │  │  Part B │  │  Part C │  │  Part D │       │
+│   │     (high quality)        │  │  (med)  │  │  (low)  │  │  (low)  │       │
+│   │                           │  │         │  │         │  │         │       │
+│   └───────────────────────────┘  └─────────┘  └─────────┘  └─────────┘       │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+A.2.2.  Screen Sharing with Video
+
+   A participant shares their screen while also transmitting camera
+   video.  The screen content may have different characteristics than
+   camera video (e.g., higher resolution for text readability, lower
+   frame rate acceptable).  The system needs to prioritize bandwidth
+   between screen sharing and camera video based on content type and
+   subscriber preferences.
+
+   The original publisher encodes both screen share and camera video at
+   multiple quality levels, publishing each content type as a separate
+   switching set.  The publisher indicates that screen share has higher
+   priority than camera video.  The end subscriber subscribes to both
+   switching sets and may specify a minimum acceptable quality
+   (throughput) for the screen share to ensure text remains readable.
+   The relay manages bandwidth allocation between the two content types,
+   degrading camera video quality before reducing screen share quality
+   when bandwidth becomes constrained.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            Original Publisher                                │
+│                                                                              │
+│   ┌─────────────────────────────┐      ┌─────────────────────────────┐       │
+│   │      Screen Share           │      │      Camera Video           │       │
+│   │      (prio: high)           │      │      (prio: low)            │       │
+│   │  ┌───────┐ ┌───────┐        │      │  ┌───────┐ ┌───────┐        │       │
+│   │  │1080p  │ │ 720p  │        │      │  │ 720p  │ │ 360p  │        │       │
+│   │  │2 Mbps │ │800kbps│        │      │  │1.5Mbps│ │400kbps│        │       │
+│   │  │prio:1 │ │prio:2 │        │      │  │prio:3 │ │prio:4 │        │       │
+│   │  └───┬───┘ └───┬───┘        │      │  └───┬───┘ └───┬───┘        │       │
+│   │      │         │            │      │      │         │            │       │
+│   └──────┼─────────┼────────────┘      └──────┼─────────┼────────────┘       │
+│          │         │                          │         │                    │
+└──────────┼─────────┼──────────────────────────┼─────────┼────────────────────┘
+           │         │                          │         │
+           ▼         ▼                          ▼         ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Manages two switching sets with publisher-indicated content priorities     │
+│   Allocates bandwidth based on content type and rendition priorities         │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Screen@1080p + Camera@360p
+                                      │  (prioritizing screen readability)
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             End Subscriber                                   │
+│                                                                              │
+│   ┌───────────────────────────────────────────┐  ┌────────────────────┐      │
+│   │                                           │  │                    │      │
+│   │           Screen Share                    │  │   Camera (small)   │      │
+│   │           (high quality for text)         │  │   (lower quality)  │      │
+│   │                                           │  │                    │      │
+│   └───────────────────────────────────────────┘  └────────────────────┘      │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+A.2.3.  VR/AR Streaming
+
+   Virtual and augmented reality applications require streaming high-
+   resolution immersive content while adapting to available bandwidth.
+   Two key scenarios benefit from DTS: foveated rendering where quality
+   varies based on gaze direction, and multi-layer environments where
+   different scene elements have different quality requirements.
+
+   In foveated rendering, a 360-degree video is divided into tiles.  The
+   tile where the user is currently looking (determined by eye tracking)
+   receives highest quality, while peripheral tiles receive lower
+   quality.  As the user's gaze shifts, bandwidth allocation must
+   dynamically shift between tiles.
+
+   The original publisher encodes each tile at multiple quality levels
+   and publishes them as separate switching sets, indicating spatial
+   relationships between tiles.  The end subscriber subscribes to all
+   tiles within the field of view and as gaze direction changes,
+   subscriber assigns higher weight to the gaze tile and lower weights
+   to peripheral tiles.  The relay responds rapidly to these updates,
+   reallocating bandwidth to deliver high quality for the gaze tile
+   while maintaining lower quality for surrounding tiles.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          VR Headset (Publisher)                              │
+│                                                                              │
+│   360° Video Tiles (each with quality variants and priorities)               │
+│   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                │
+│   │ Tile 1  │ │ Tile 2  │ │ Tile 3  │ │ Tile 4  │ │ Tile 5  │  ...           │
+│   │hi/lo    │ │hi/lo    │ │hi/lo    │ │hi/lo    │ │hi/lo    │                │
+│   │prio:1/2 │ │prio:1/2 │ │prio:1/2 │ │prio:1/2 │ │prio:1/2 │                │
+│   └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘                │
+│        │           │     [GAZE]│           │           │                     │
+└────────┼───────────┼───────────┼───────────┼───────────┼─────────────────────┘
+         │           │           │           │           │
+         ▼           ▼           ▼           ▼           ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Uses publisher rendition priorities within each tile                       │
+│   Receives gaze direction updates from subscriber                            │
+│   Allocates bandwidth: high quality to gaze tile, lower to periphery         │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Tile3@hi, others@lo
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             End Subscriber                                   │
+│                                                                              │
+│   ┌─────────────────────────────────────────────────────────────────┐        │
+│   │                      360° Rendered View                         │        │
+│   │  ┌──────┐ ┌──────┐ ┌────────────────┐ ┌──────┐ ┌──────┐         │        │
+│   │  │ lo   │ │ lo   │ │      hi        │ │ lo   │ │ lo   │         │        │
+│   │  │      │ │      │ │   (gaze area)  │ │      │ │      │         │        │
+│   │  └──────┘ └──────┘ └────────────────┘ └──────┘ └──────┘         │        │
+│   └─────────────────────────────────────────────────────────────────┘        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+A.3.  Switching Set(s) with Guaranteed Streams
+
+   These use cases combine adaptive media with fixed-bandwidth streams
+   that require guaranteed delivery.
+
+A.3.1.  Cloud Gaming
+
+   Cloud gaming services stream rendered game video from servers to
+   players.  The video stream must adapt to network conditions while
+   balancing resolution, frame rate, and latency based on game type and
+   player preferences.  Different game genres have different
+   requirements: fast-paced action games prioritize frame rate and low
+   latency, while strategy games may prioritize resolution.
+
+   Additionally, different regions of the game screen may have different
+   importance: the HUD (heads-up display) with critical game information
+   may need guaranteed quality, while the main game world adapts to
+   remaining bandwidth.
+
+   The original publisher (game server) encodes the game world video at
+   multiple quality levels and publishes the HUD as a separate fixed-
+   bandwidth track with high priority.  The publisher minimizes encoding
+   latency to maintain gameplay responsiveness.  The end subscriber
+   subscribes to both the game video switching set and the HUD track,
+   indicating that the HUD requires guaranteed bandwidth.  The relay
+   reserves bandwidth for the HUD first, then selects the appropriate
+   game video quality from the remaining capacity, prioritizing low
+   latency throughout the forwarding path.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         Game Server (Publisher)                              │
+│                                                                              │
+│   ┌─────────────────────────────────┐  ┌─────────────────────────────┐       │
+│   │       Game World Video          │  │      HUD/Overlay            │       │
+│   │       (prio: low)               │  │      (prio: high)           │       │
+│   │  ┌───────┐ ┌───────┐ ┌───────┐  │  │  ┌───────┐                  │       │
+│   │  │4K/60  │ │1080/60│ │720/60 │  │  │  │ Fixed │                  │       │
+│   │  │25Mbps │ │8 Mbps │ │3 Mbps │  │  │  │200kbps│                  │       │
+│   │  │prio:1 │ │prio:2 │ │prio:3 │  │  │  └───┬───┘                  │       │
+│   │  └───┬───┘ └───┬───┘ └───┬───┘  │  │      │                      │       │
+│   └──────┼─────────┼─────────┼──────┘  └──────┼──────────────────────┘       │
+│          │         │         │                │                              │
+└──────────┼─────────┼─────────┼─────────────── ┼──────────────────────────────┘
+           │         │         │                │
+           ▼         ▼         ▼                ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Uses publisher priorities: HUD (high) + game video renditions (1/2/3)      │
+│   Reserves HUD bandwidth first, selects game quality from remainder          │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Game@1080/60 + HUD@fixed
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              Player (Subscriber)                             │
+│                                                                              │
+│   ┌─────────────────────────────────────────────────────────────────┐        │
+│   │  ┌─────────────────────────────────────────────────────────┐    │        │
+│   │  │                                                         │    │        │
+│   │  │                    Game World                           │    │        │
+│   │  │                  (adaptive quality)                     │    │        │
+│   │  │                                                         │    │        │
+│   │  └─────────────────────────────────────────────────────────┘    │        │
+│   │  ┌─────────────────┐                      ┌─────────────────┐   │        │
+│   │  │ Health: XXXX--- │                      │  Ammo: 30/120   │   │        │
+│   │  └─────────────────┘    HUD (guaranteed)  └─────────────────┘   │        │
+│   └─────────────────────────────────────────────────────────────────┘        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+A.3.2.  Live Sports Multi-View
+
+   Live sports broadcasts offer multiple camera angles: main game
+   camera, sideline cameras, aerial views, and isolated player cameras.
+   Viewers may want to watch multiple angles simultaneously, with the
+   ability to prioritize different views.  A stats overlay stream
+   provides real-time game information.  Bandwidth must be allocated
+   across these streams based on viewer preferences that may change
+   during the event (e.g., switching focus to replay angle).
+
+   The original publisher (broadcast origin) encodes each camera angle
+   at multiple quality levels and publishes a stats overlay as a
+   separate guaranteed stream.  All streams share a common time
+   reference for synchronization.  The end subscriber subscribes to
+   desired camera angles and the stats overlay, assigning weights to
+   indicate which views are most important.  During highlights or
+   replays, the subscriber dynamically adjusts priority weights to shift
+   focus to the relevant camera.  The relay allocates bandwidth
+   according to subscriber weights, maintains temporal sync across all
+   forwarded streams, and responds promptly to priority changes.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         Broadcast Origin (Publisher)                         │
+│                                                                              │
+│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
+│  │  Main Camera  │ │   Sideline    │ │    Aerial     │ │  Stats/Score  │     │
+│  │  hi/med/lo    │ │  hi/med/lo    │ │  hi/med/lo    │ │   (fixed)     │     │
+│  │  prio:1/2/3   │ │  prio:1/2/3   │ │  prio:1/2/3   │ │  prio: high   │     │
+│  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
+│          │                 │                 │                 │             │
+└──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
+           │                 │                 │                 │
+           ▼                 ▼                 ▼                 ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Uses publisher priorities: renditions (1/2/3), stats (high)                │
+│   Allocates bandwidth based on subscriber-selected camera priorities         │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Main@hi, Sideline@med, Aerial@lo, Stats
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             Viewer (Subscriber)                              │
+│                                                                              │
+│   ┌────────────────────────────────────────┐  ┌──────────────────────┐       │
+│   │                                        │  │    Sideline View     │       │
+│   │           Main Camera View             │  │    (medium quality)  │       │
+│   │           (high quality)               │  ├──────────────────────┤       │
+│   │                                        │  │    Aerial View       │       │
+│   │                                        │  │    (low quality)     │       │
+│   └────────────────────────────────────────┘  └──────────────────────┘       │
+│   ┌─────────────────────────────────────────────────────────────────┐        │
+│   │  SCORE: Home 2 - Away 1  |  Time: 73:24  |  Possession: 58%     │        │
+│   └─────────────────────────────────────────────────────────────────┘        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+A.3.3.  Teleoperation and Robotics
+
+   Remote operation of robots, drones, or industrial equipment requires
+   streaming multiple video feeds with different importance levels.  The
+   primary control camera (showing the manipulation task) requires
+   highest quality and lowest latency.  Secondary cameras providing
+   situational awareness can accept lower quality.  Sensor telemetry
+   streams compete for bandwidth with video feeds.
+
+   The original publisher (robot or drone) encodes the primary control
+   camera at multiple quality levels with minimal encoding latency,
+   encodes situational cameras at multiple levels, and publishes sensor
+   telemetry as a separate guaranteed stream.  All streams share a
+   common time reference.  The end subscriber subscribes to the primary
+   camera with highest priority and specifies latency requirements,
+   subscribes to telemetry with guaranteed bandwidth, and subscribes to
+   situational cameras with lower priority.  The relay prioritizes
+   latency for the primary camera, reserves bandwidth for telemetry, and
+   allocates remaining capacity to situational cameras.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           Robot (Publisher)                                  │
+│                                                                              │
+│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
+│  │ Primary Cam   │ │  Left Cam     │ │  Right Cam    │ │  Telemetry    │     │
+│  │ (manipulation)│ │ (situational) │ │ (situational) │ │  (sensors)    │     │
+│  │  prio: high   │ │  prio: low    │ │  prio: low    │ │  prio: high   │     │
+│  │  hi/med/lo    │ │  hi/lo        │ │  hi/lo        │ │  (fixed)      │     │
+│  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
+│          │                 │                 │                 │             │
+└──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
+           │                 │                 │                 │
+           ▼                 ▼                 ▼                 ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Publisher priorities: content type (high/low) + renditions (1/2/3)         │
+│   Latency-critical: minimize delay for primary control feed                  │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Primary@hi, Left@lo, Right@lo, Telemetry
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         Operator Console (Subscriber)                        │
+│                                                                              │
+│   ┌────────────────────────────────────────────────────────────────┐         │
+│   │                                                                │         │
+│   │              Primary Camera (high quality, low latency)        │         │
+│   │                                                                │         │
+│   └────────────────────────────────────────────────────────────────┘         │
+│   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
+│   │   Left Camera    │  │   Right Camera   │  │   Telemetry      │           │
+│   │   (low quality)  │  │   (low quality)  │  │ Temp: 45°C       │           │
+│   │                  │  │                  │  │ Battery: 73%     │           │
+│   └──────────────────┘  └──────────────────┘  └──────────────────┘           │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 
 Acknowledgments
 
