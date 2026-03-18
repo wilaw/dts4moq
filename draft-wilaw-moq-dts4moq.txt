@@ -5,7 +5,7 @@
 Media Over QUIC                                                   W. Law
 Internet-Draft                                                    Akamai
 Intended status: Informational                                  I. Swett
-Expires: 16 August 2026                                           Google
+Expires: 19 September 2026                                        Google
                                                            S. Nandakumar
                                                                M. Zanaty
                                                                    Cisco
@@ -16,7 +16,7 @@ Expires: 16 August 2026                                           Google
                                                       Ozyegin University
                                                                 G. Simon
                                                                Synamedia
-                                                        12 February 2026
+                                                           18 March 2026
 
 
                 Dynamic Track Switching for MOQT relays
@@ -58,7 +58,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 16 August 2026.
+   This Internet-Draft will expire on 19 September 2026.
 
 Copyright Notice
 
@@ -102,8 +102,7 @@ Table of Contents
 
    DTS is enabled and disabled by the subscriber.  The definition of the
    switching sets and the metadata required to implement the switching
-   rules are defined by either the subscriber or the original
-   punblisher.
+   rules are defined by either the subscriber or the original publisher.
 
 2.  Subscribe parameters
 
@@ -153,8 +152,8 @@ Table of Contents
    *  Switching set ID - an integer referencing a previously defined
       switching set.
 
-   *  State - a value of 1 activates dynanmic switching for the
-      specified switching set and a value of 0 deactivates it.
+   *  State - a value of 1 activates dynamic switching for the specified
+      switching set and a value of 0 deactivates it.
 
 3.  Workflow
 
@@ -171,7 +170,7 @@ Table of Contents
        the set identifier, the throughput threshold and the time limit.
 
    4.  On the last SUBCRIPTION, the client also appends the DTS-
-       ACTIVATION parameter and sets it value to 1.  Dynamic track
+       ACTIVATION parameter and sets its value to 1.  Dynamic track
        selection is now active for the switching set.
 
    To disable dynamic track selection for a given switching set, the
@@ -189,7 +188,7 @@ Table of Contents
 
    To add a new track to an existing switching set, the client issues a
    SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT parameter, with
-   the Switching set ID poiniting at the existing switching set.
+   the Switching set ID pointing at the existing switching set.
 
 3.2.  Relay workflow
 
@@ -199,7 +198,7 @@ Table of Contents
        the subscription is set to zero.
 
    2.  Upon receiving a DTS-ACTIVATION parameter with a state of 1, the
-       relay beings active track selection.  Active track selection
+       relay begins active track selection.  Active track selection
        implies that the relay monitor the incoming new groups as well as
        maintain an estimate of the throughput available in the
        connection.  This throughput estimate SHOULD be applicable over
