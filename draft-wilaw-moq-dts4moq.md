@@ -437,7 +437,7 @@ The original publisher encodes both screen share and camera video at multiple qu
 publishing each content type as a separate switching set. The publisher indicates that screen
 share has higher priority than camera video. The end subscriber subscribes to both switching
 sets and may specify a minimum acceptable quality (throughput) for the screen share to
-ensure text remains readable. The relay manages bandwidth allocation between the two content types, 
+ensure text remains readable. The relay manages bandwidth allocation between the two content types,
 degrading camera video quality before reducing screen share quality when bandwidth becomes constrained.
 
 ~~~
@@ -496,7 +496,7 @@ shift between tiles.
 
 The original publisher encodes each tile at multiple quality levels and publishes them as
 separate switching sets, indicating spatial relationships between tiles. The end subscriber
-subscribes to all tiles within the field of view and as gaze direction changes, subscriber 
+subscribes to all tiles within the field of view and as gaze direction changes, subscriber
 assigns higher weight to the gaze tile and lower weights to
 peripheral tiles. The relay responds rapidly to these updates, reallocating bandwidth to
 deliver high quality for the gaze tile while maintaining lower quality for surrounding tiles.
