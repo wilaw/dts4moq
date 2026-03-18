@@ -623,8 +623,8 @@ The original publisher (broadcast origin) encodes each camera angle at multiple 
 levels and publishes a stats overlay as a separate guaranteed stream. All streams share
 a common time reference for synchronization. The end subscriber subscribes to desired
 camera angles and the stats overlay, assigning weights to indicate which views are most
-important. During highlights or replays, the subscriber sends SUBSCRIBE_UPDATE messages
-to shift priority to the relevant camera. The relay allocates bandwidth according to
+important. During highlights or replays, the subscriber dynamically adjusts priority
+weights to shift focus to the relevant camera. The relay allocates bandwidth according to
 subscriber weights, maintains temporal sync across all forwarded streams, and responds
 promptly to priority changes.
 
