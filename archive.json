@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-17T01:26:30.073139+00:00",
+  "timestamp": "2026-03-19T01:29:46.096360+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -103,15 +103,15 @@
       "id": "I_kwDOROSEss7rqbTb",
       "title": "remove a track from a switching set",
       "url": "https://github.com/wilaw/dts4moq/issues/5",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "gwendalsimon",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "When reading the text, I struggled to understand the sentence \"_The value zero is reserved to indicate no switching set._\" in the definition of the switching set. It becomes clearer when reading the paragraph \"_To remove one track from a switching set, while leaving the other tracks active, the client issues a REQUEST_UPDATE message with the request ID referencing the subscription it wishes to remove and a SWITCHING-SET-ASSIGNMENT parameter with a Switching set ID of zero._\" If we maintain this process, then the first sentence may be rewritten.\n\nThat being said, one track can belong to multiple switching sets, can't it? If the Relay receives a switching set 0, should it remove the track from all switching sets? It may be cleaner to have another parameter SWITCHING-SET-STOP-ASSIGNMENT with only the switching set ID.",
       "createdAt": "2026-02-17T17:02:59Z",
-      "updatedAt": "2026-03-15T23:06:33Z",
-      "closedAt": null,
+      "updatedAt": "2026-03-18T18:05:18Z",
+      "closedAt": "2026-03-18T18:05:18Z",
       "comments": [
         {
           "author": "wilaw",
@@ -119,6 +119,13 @@
           "body": "No, a track can only belong to one switching set. What is the use-case that requires a track to belong to more than one switching set simultaneously? \n\n> hen the first sentence may be rewritten.\n\nSuggested rewrite: The value zero is reserved to remove the track from the switching set to which it has been previously added. ",
           "createdAt": "2026-03-15T23:06:33Z",
           "updatedAt": "2026-03-15T23:06:33Z"
+        },
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": "All use-cases I had in mind for a track belonging to multiple switching sets can be addressed in a different way, so I close this issue.",
+          "createdAt": "2026-03-18T18:05:18Z",
+          "updatedAt": "2026-03-18T18:05:18Z"
         }
       ]
     },
@@ -134,7 +141,7 @@
       "labels": [],
       "body": "(As for the SWITCH message), we need a definition of \"common group boundaries\" for a pair of tracks. I think there is a consensus on a definition such as \"_groups with the same ID arriving approximately at the same time_\". Yet, timer-based approach has some limitations:\n- The Subscriber must set a timeout although it does not know the size of the group, nor the objects. Ex: If the first object of a group takes in average 1 sec to be transmitted, then 200 ms may be acceptable, but it would not be for a small group taking say 50ms to be delivered.\n- The Subscriber does not know the Relay upstream connection. In case of significant jitter (for example due to long RTT and non-negligible packet losses), the timer should be increased.\n- If the upstream connection is congested, then the track with the minimum bitrate arrives first, maybe by a far margin. In that case, all other high-quality tracks will be unselected because they arrive too late at the Relay.\n\nIt could be possible to ignore the \"approximately at the same time\" to define common group boundaries. We trust the fact that the Subscriber indicated that these tracks are in sync. So if the Relay has the same group IDs for two tracks in its cache or in the upstream wire, it considers they are common group boundaries (and if not, then it is a matter for the Subscriber).\n\n",
       "createdAt": "2026-02-17T22:21:46Z",
-      "updatedAt": "2026-03-15T23:15:42Z",
+      "updatedAt": "2026-03-18T19:19:25Z",
       "closedAt": null,
       "comments": [
         {
@@ -143,6 +150,13 @@
           "body": "> The Subscriber must set a timeout although it does not know the size of the group, nor the objects. \n\n But it has read the catalog (or some equivalent) so it knows a lot about the bitrate of the tracks and the group spacing and can apply appropriate timeouts. We allow the subscriber to set different duration timeouts for each track to accommodate different expected transfer times. \n\n> It could be possible to ignore the \"approximately at the same time\" to define common group boundaries. \n\nCan you explain how you would do this? If we discard the feature that the switching mechanism will select a second-preference track if the first-preference track does not arrive in time, then we can dispense with timeouts all-together, as the relay will simply make a track selection and stick with it, no matter how long the groups take to arrive. But we have to give up on that feature first. ",
           "createdAt": "2026-03-15T23:15:42Z",
           "updatedAt": "2026-03-15T23:15:42Z"
+        },
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": " > > It could be possible to ignore the \"approximately at the same time\" to define common group boundaries.\n> \n> Can you explain how you would do this? If we discard the feature that the switching mechanism will select a second-preference track if the first-preference track does not arrive in time, then we can dispense with timeouts all-together, as the relay will simply make a track selection and stick with it, no matter how long the groups take to arrive. But we have to give up on that feature first.\n\nThe algorithm I had in mind is as follows. A Relay is playing track A (preferred track). It arrives at the end of group N. Then it should take a decision among all tracks for which it received the N+1 group (or if gaps, the N+x  group where x is the smallest). These are the \"availableTrackSet\". The Relay chooses the preferred track among the availableTrackSet. This set may be similar to the SwitchingSet, or it can be a subset of SwitchingSet due to timing constraints. If A is in the AvailableTrackSet, it can stay on A. It not, then it should choose its preferred track among the AvailableTrackSet.\n\nI think it can avoid one pitfall of the timeout based. Let's say that, because the timer is too strict, some tracks have been \"disqualified\" for group N+1 (they arrived too late). However, when the Relay arrives at the end of group N, its internal buffer contains the group N+1 for some of these disqualified tracks. Should it ignore these tracks just because they arrived slightly late against a timer some time ago, or should it consider them nonetheless? I would be in the second team. And so we could get rid of the timer.\n\nThis was one of the debates related to SWITCH. In my opinion, Groups are \"join points\". I would say these join points are decision points. The Relay should decide to switch or not when it arrives at the end of a group and should start the next group.",
+          "createdAt": "2026-03-18T18:46:31Z",
+          "updatedAt": "2026-03-18T19:19:25Z"
         }
       ]
     },
@@ -196,7 +210,7 @@
       "labels": [],
       "body": "During congestion, the Subscriber lags behind live. It is expected to be less an issue in this adaptive mechanism, but it can still happen. In case the Relay has received several new groups for some tracks, and it cached these groups, should it still refer to the timer result to identify which tracks are qualified for selection?\n\nFor example, say that the Relay just finished transmission of group 30. It has in its cache\nTrack A groups 31, 32, 33. For each of these groups, Track A was the first track to trigger the timer.\nTrack B groups 31 (arrived before timer expiration), 32 (arrived after expiration), and 33 (arrived before expiration). Track B is the preferred track.\n\nShould the Relay switch to track A for group 31 and back to track B at 32?",
       "createdAt": "2026-02-17T22:52:45Z",
-      "updatedAt": "2026-03-16T03:09:46Z",
+      "updatedAt": "2026-03-18T19:23:29Z",
       "closedAt": null,
       "comments": [
         {
@@ -205,6 +219,13 @@
           "body": "> Should the Relay switch to track A for group 31 and back to track B at 32?\n\nYes, it should. Group 31 for B was late according to the rules the client set, so the relay sent the next preferred track, which is A.\n\nThis assumes the bitrate A < bitrate B. If A> B, then the relay should either send nothing for that group, or send B even though it was late. what do you think? ",
           "createdAt": "2026-03-16T03:09:46Z",
           "updatedAt": "2026-03-16T03:09:46Z"
+        },
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": "> > Should the Relay switch to track A for group 31 and back to track B at 32?\n> \n> Yes, it should. Group 31 for B was late according to the rules the client set, so the relay sent the next preferred track, which is A.\n> \n> This assumes the bitrate A < bitrate B. If A> B, then the relay should either send nothing for that group, or send B even though it was late. what do you think?\n\nAs said in https://github.com/wilaw/dts4moq/issues/6#issuecomment-4084855051, I would prefer ignoring what the timer said some time ago. Here, since I have groups for both tracks, I would choose my preferred track for all groups, regardless of whether they met the timer deadline. ",
+          "createdAt": "2026-03-18T19:23:29Z",
+          "updatedAt": "2026-03-18T19:23:29Z"
         }
       ]
     },
@@ -220,7 +241,7 @@
       "labels": [],
       "body": "I am not a fan of forcing the Relay to subscribe to many tracks while it only forwards one track downstream. In case of large switching sets, it is a significant burden at the Relay. Furthermore, 99% of the time, Subscribers stick to the highest track, so I hope that the developed clients will not subscribe to all tracks in the altGroup, but only to the subset of tracks that are likely to be used, e.g. the top one (likely to be the preferred one), the second top track (in case of a slight drop of connection) and the lowest (one\u00a0in case of disaster). \n\nThe dynamic management of switching sets is a great vehicle to save resources at the Relay, but it is in the hand of the Subscriber.\n\nShould we add a mechanism such that\n- the Relay declares the maximum number of concurrent subscriptions it can handle in a switching set?\n- the Relay rejects a subscription for a switching set because it is above its capacity?   ",
       "createdAt": "2026-02-18T08:01:33Z",
-      "updatedAt": "2026-03-16T03:13:33Z",
+      "updatedAt": "2026-03-18T19:25:50Z",
       "closedAt": null,
       "comments": [
         {
@@ -229,6 +250,13 @@
           "body": "> Should we add a mechanism such that the Relay declares the maximum number of concurrent subscriptions it can handle in a switching set?\n\nYes. This could be negotiated in setup. Should it be specified in terms of total bitrate or just track count? For example, switching 3x2160p video tracks takes a lot more resources than 10 x 32kbps audio tracks. ",
           "createdAt": "2026-03-16T03:13:33Z",
           "updatedAt": "2026-03-16T03:13:33Z"
+        },
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": "> > Should we add a mechanism such that the Relay declares the maximum number of concurrent subscriptions it can handle in a switching set?\n> \n> Yes. This could be negotiated in setup. Should it be specified in terms of total bitrate or just track count? For example, switching 3x2160p video tracks takes a lot more resources than 10 x 32kbps audio tracks.\n\nI would suggest both.\nSubscribing to tracks is a burden both in terms of cache storage and in terms of subscription management. So, I would prefer having the option to have two limits: max total kbps, and max number of tracks in the Switching set.",
+          "createdAt": "2026-03-18T19:25:50Z",
+          "updatedAt": "2026-03-18T19:25:50Z"
         }
       ]
     },
@@ -237,15 +265,15 @@
       "id": "I_kwDOROSEss7sNyKQ",
       "title": "First preferred track",
       "url": "https://github.com/wilaw/dts4moq/issues/10",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "gwendalsimon",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "The text says that (in the third bullet) that \"_When the first Object 0 of new Group N of track T arrives at the relay, the relay selects the preferred track to forward from the switching set. The preferred track is the track with the highest throughput threshold smaller than or equal to the current throughput estimate._\" I think it is for the first choice of preferred track. However, the Relay does not know the current throughput estimate (unless it already has a downstream connection to the same Subscriber).\n\nIt could be possible to let the Subscriber indicate the preferred track in the Switching-Set-Assignment with a flag \"default-preferred-track\" which says that the subscription is about the track that should be chosen first at the activation.\nif several tracks are noted as preferred one, then the last one is chosen.\nIt no track is noted as preferred one, then the Relay chooses any of them.",
       "createdAt": "2026-02-19T13:35:24Z",
-      "updatedAt": "2026-03-16T04:02:30Z",
-      "closedAt": null,
+      "updatedAt": "2026-03-18T19:27:55Z",
+      "closedAt": "2026-03-18T19:27:55Z",
       "comments": [
         {
           "author": "wilaw",
@@ -253,6 +281,13 @@
           "body": "> However, the Relay does not know the current throughput estimate (unless it already has a downstream connection to the same Subscriber).\n\nIt is my understanding that immediately after the connection is established, and before the client issues any subscribe requests, that the relay has some estimate of the throughput. It may be application limited, but its still an estimate. It is likely a lower estimate since only the opening setup has been conducted, but this means that the ABR would start low and then switch up, which is the safer behavior. ",
           "createdAt": "2026-03-16T04:02:30Z",
           "updatedAt": "2026-03-16T04:02:30Z"
+        },
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": "OK, it is consistent with the principle of server-side ABR. Only the Relay takes the decision and the client is passive. Even for a default preferred one. \nSo I close this issue.",
+          "createdAt": "2026-03-18T19:27:55Z",
+          "updatedAt": "2026-03-18T19:27:55Z"
         }
       ]
     },
@@ -310,6 +345,38 @@
           "updatedAt": "2026-03-16T04:19:02Z"
         }
       ]
+    },
+    {
+      "number": 13,
+      "id": "I_kwDOROSEss7zjTyC",
+      "title": "Describe how the scheme works when publisher has to unpublish some tracks in a switching set due to constrained uplink",
+      "url": "https://github.com/wilaw/dts4moq/issues/13",
+      "state": "OPEN",
+      "author": "gchandok",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "Subscriber may have set up a switching set include all track variants and publisher may be actively sending those. Now if the publisher's uplink throughput drops it may have to stop sending one or more tracks in the set. We should document how would the relay and the subscriber react to this. Ideally the relay would start sending the highest variant the the publisher is publishing but this may need some signaling between subscriber and relay",
+      "createdAt": "2026-03-17T04:23:06Z",
+      "updatedAt": "2026-03-17T04:23:06Z",
+      "closedAt": null,
+      "comments": []
+    },
+    {
+      "number": 15,
+      "id": "I_kwDOROSEss7z8JwL",
+      "title": "Feedback from IETF#125",
+      "url": "https://github.com/wilaw/dts4moq/issues/15",
+      "state": "OPEN",
+      "author": "wilaw",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "1. Remove the Selection time limit attribute from the SWITCHING-SET-ASSIGNMENT parameter. The feeling was that this complicated the implementation. It's utility is to enable the relay to select a lower bitrate track if the preferred track arrives late. The group felt that this would occur infrequently enough and if it did, then the existing delivery timeout feature of MOQT would kick-in and the client could remove the offending track from the switching set.\n\n2. Remove the DTS-ACTIVATION parameter and replace its functionality with a flag in the SWITCHING-SET-ASSIGNMENT parameter. ",
+      "createdAt": "2026-03-18T04:27:58Z",
+      "updatedAt": "2026-03-18T04:27:58Z",
+      "closedAt": null,
+      "comments": []
     }
   ],
   "pulls": [
@@ -342,28 +409,105 @@
     {
       "number": 4,
       "id": "PR_kwDOROSEss7D-rsM",
-      "title": "Fixes some minor types",
+      "title": "Fixes some minor typos",
       "url": "https://github.com/wilaw/dts4moq/pull/4",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "zafergurel",
-      "authorAssociation": "NONE",
+      "authorAssociation": "CONTRIBUTOR",
       "assignees": [],
       "labels": [],
       "body": "",
       "createdAt": "2026-02-16T01:35:54Z",
-      "updatedAt": "2026-02-16T01:35:54Z",
+      "updatedAt": "2026-03-18T04:01:34Z",
       "baseRepository": "wilaw/dts4moq",
       "baseRefName": "main",
       "baseRefOid": "8f01b005a401ef0857fa326001689653b8a59691",
       "headRepository": "zafergurel/dts4moq",
       "headRefName": "fix/typos",
       "headRefOid": "c3676ccc3d3513d077abd62b6a5e74a30fd623f7",
+      "closedAt": "2026-03-18T03:58:31Z",
+      "mergedAt": "2026-03-18T03:58:31Z",
+      "mergedBy": "wilaw",
+      "mergeCommit": {
+        "oid": "b9549725d326dc26370ada6cd45c3ab364af3d30"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "PRR_kwDOROSEss7sUwpu",
+          "commit": {
+            "abbreviatedOid": "c3676cc"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "APPROVED",
+          "body": "Thanks for catching these typos. ",
+          "createdAt": "2026-03-18T03:58:16Z",
+          "updatedAt": "2026-03-18T03:58:16Z",
+          "comments": []
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "id": "PR_kwDOROSEss7LHvkz",
+      "title": "Add use-cases",
+      "url": "https://github.com/wilaw/dts4moq/pull/14",
+      "state": "OPEN",
+      "author": "suhasHere",
+      "authorAssociation": "COLLABORATOR",
+      "assignees": [],
+      "labels": [],
+      "body": "This PR adds a list of use-cases where DTS for MOQ is very useful and helps drive the requirements as well.",
+      "createdAt": "2026-03-17T06:15:20Z",
+      "updatedAt": "2026-03-18T05:20:11Z",
+      "baseRepository": "wilaw/dts4moq",
+      "baseRefName": "main",
+      "baseRefOid": "8f01b005a401ef0857fa326001689653b8a59691",
+      "headRepository": "wilaw/dts4moq",
+      "headRefName": "snk-usecases",
+      "headRefOid": "984c08277296eaa3e9ea8dab599f9bef4e923db8",
       "closedAt": null,
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
-      "comments": [],
-      "reviews": []
+      "comments": [
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "HI @suhasHere  - i like these use-cases, but the text is very long, longer in fact than the draft itself. This impairs the readability of the draft for those interested in the mechanics of its implementation. Can you move these to an appendix and then reference them in the introduction section? \r\n\r\nReading through them all, the one feature that we need to add (which I hinted at in the IEFT#125 presentation), is to add a \"fractional\" or weight attribute for each switching set, to allocate what fraction of the total connectivity should be allocated to each switching set, along with a mechanism to easily update this. I will add this in my post #125 PR. \r\n\r\n",
+          "createdAt": "2026-03-18T03:27:15Z",
+          "updatedAt": "2026-03-18T03:27:15Z"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "PRR_kwDOROSEss7sVvsG",
+          "commit": {
+            "abbreviatedOid": "5c7eeb2"
+          },
+          "author": "github-actions",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-03-18T05:16:32Z",
+          "updatedAt": "2026-03-18T05:16:32Z",
+          "comments": [
+            {
+              "originalPosition": 272,
+              "body": "````suggestion\nensure text remains readable. The relay manages bandwidth allocation between the two content types,\n````",
+              "createdAt": "2026-03-18T05:16:32Z",
+              "updatedAt": "2026-03-18T05:16:32Z"
+            },
+            {
+              "originalPosition": 331,
+              "body": "````suggestion\nsubscribes to all tiles within the field of view and as gaze direction changes, subscriber\n````",
+              "createdAt": "2026-03-18T05:16:32Z",
+              "updatedAt": "2026-03-18T05:16:32Z"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
