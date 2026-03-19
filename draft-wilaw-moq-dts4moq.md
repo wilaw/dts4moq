@@ -11,9 +11,8 @@ v: 3
 area: "Web and Internet Transport"
 workgroup: "Media Over QUIC"
 keyword:
- - next generation
- - unicorn
- - sparkling distributed ledger
+ - moqt
+ - dts
 venue:
   group: "Media Over QUIC"
   type: "Working Group"
@@ -58,7 +57,7 @@ informative:
 
 --- abstract
 
-TODO Abstract
+Adds the capabaility of Dynamic Track Switching (DTS) to Media over QUIC Transport [MOQT].
 
 
 --- middle
@@ -70,46 +69,42 @@ Dynamic Track Switching allows a relay to dynamically switch which groups are fo
 a set of subscriptions. One use-case enabled by DTS is Adaptive Bitrate Streaming (ABR), in which
 time-aligned media tracks are switched at group boundaries based upon available throughput estimates.
 
-DTS is enabled and disabled by the subscriber. The definition of the switching sets and the metadata
-required to implement the switching rules are defined by either the subscriber or the original publisher.
+The definition of the switching sets and the metadata required to implement the switching rules are
+defined by the subscriber. The subscriber also activates and deactivates switching on a given set.
 
-# Subscribe parameters
-We introduce two new message parameters to enable Dynamic Track Switching.
+# The SWITCHING-SET-ASSIGNMENT parameter
+We introduce a new message parameter to enable Dynamic Track Switching.
 
-## The SWITCHING-SET-ASSIGNMENT parameter
 The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) MAY appear in a SUBSCRIBE or REQUEST_UPDATE
-message. This parameter assigns the accompanying subscription to a DTS switching set and specifies a waiting
-time-limit. The parameter body is serialized as follows:
+message. This parameter assigns the accompanying subscription to a DTS switching set, sets a throughput
+threshold and throughput fraction and tells the relay whether it should begin actively switching the set.
+The parameter body is serialized as follows:
 
 ~~~
 SWITCHING-SET-ASSIGNMENT {
   Switching set ID (vi64),
-  [Throughput threshold (vi64),
-  Selection time limit (vi64)]
+  Throughput threshold (vi64),
+  Set throughput fraction (vi64),
+  Activate switching (1)
 }
 ~~~
 
-* Switching set ID - an integer specifying a switching set. The value zero is reserved to indicate no switching set.
+* Switching set ID - an integer specifying a switching set. A track MUST only be assigned to one switching set at
+  a time.
 * Throughput threshold - the minimum throughput, expressed in integer kilobits per second, necessary to select
-  this subscription. This value MUST be omitted if the Switching set ID is zero.
-* Selection time limit - the maximum amount of time, in milliseconds, which a relay MUST wait after the arrival of the
-  first candidate group in a switching group, before this subscription is disqualified as the preferred selection.
-  This value MUST be omitted if the Switching set ID is zero.
+  this subscription.
+* Set throughput fraction - the fraction of the connection throughput that should be allocated to this switching set,
+  expressed as a positive integer N, such that the set will be allocated 1/N of the estimated connection throughput.
+* Activate switching  - 0 if the client will be adding more subscriptions to the set or 1 if the client is complete
+  and the relay should activate switching.
 
-## The DTS-ACTIVATION parameter.
-The DTS-ACTIVATION parameter (Parameter Type 0x43) MAY appear in a SUBSCRIBE or REQUEST_UPDATE
-message. This parameter enables or disables dynamic track switching for a specified switching set. The
-parameter body is serialized as follows:
+# Content requirements
 
-~~~
-DTS-ACTIVATION {
-  Switching set ID (vi64),
-  State (1)
-}
-~~~
+For tracks to participate in a dynamic switching set, they
 
-* Switching set ID - an integer referencing a previously defined switching set.
-* State - a value of 1 activates dynamic switching for the specified switching set and a value of 0 deactivates it.
+* MUST be time aligned at group boundaries.
+* MUST hold equivalent and independent versions of the same content, encoded at different bitrates. DTS is not a solution
+  for switching between Scalable Video Coding (SVC) layers.
 
 # Workflow
 
@@ -119,49 +114,46 @@ DTS-ACTIVATION {
    for DTS.
 2. The client selects an integer identifier to label this set. This identifier MUST be unique within the MOQT connection.
 3. For each track, it issues a SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT parameter. Within that parameter, it
-   communicates the set identifier, the throughput threshold and the time limit.
-4. On the last SUBCRIPTION, the client also appends the DTS-ACTIVATION parameter and sets its value to 1. Dynamic track
-   selection is now active for the switching set.
-
-To disable dynamic track selection for a given switching set, the client sends a DTS-ACTIVATION parameter with a state
-value of 0 on a REQUEST-UPDATE message. This action leaves all subscriptions in that switching set still active, but with
-a Forward state of 0. To re-enable dynamic track selection for that set, the client sends a DTS-ACTIVATION parameter with
-a state value of 1 on a REQUEST-UPDATE message.
-
-To remove one track from a switching set, while leaving the other tracks active, the client issues a REQUEST_UPDATE message
-with the request ID referencing the subscription it wishes to remove and a SWITCHING-SET-ASSIGNMENT parameter with a
-Switching set ID of zero.
+   communicates the set identifier, the throughput threshold, the set's throughput fraction and the activation state. The
+   activation state SHOULD be 0 for all but the last track to be assigned to the set. The set's throughput fraction SHOULD
+   remain consistent for each set identifier. If it changes between subscriptions, then the last value supplied will be
+   applied to the set.
+5. On the last SUBSCRIPTION, the client sets the activation state flag to 1.  Dynamic track selection is now active for
+   the switching set.
 
 To add a new track to an existing switching set, the client issues a SUBSCRIPTION and appends a SWITCHING-SET-ASSIGNMENT
 parameter, with the Switching set ID pointing at the existing switching set.
 
+To remove one track from a switching set, the client unsubscribes from that track.
+
+To disable dynamic track selection for a given switching set, but maintain the relay's definition of the set, the client
+sends a REQUEST_UPDATE message for any one of the tracks contained within the switching set and attaches the
+SWITCHING-SET-ASSIGNMENT parameter with an activate switching value of zero.
+
+To resume switching on a given switching set, the client sends a REQUEST_UPDATE message for any one of the tracks contained
+within the switching set and attach the SWITCHING-SET-ASSIGNMENT parameter with an activate switching value of 1.
+
+To disable dynamic track selection for a given switching set, and remove the set from the relay,  the client unsubscribes
+from all tracks in the switching set.
+
 ## Relay workflow
 
 1. Upon receiving a SWITCHING-SET-ASSIGNMENT parameter, the relay adds the subscription to the specified switching set,
-   creating the switching set if it does not yet exist. The Forward state of the subscription is set to zero.
-2. Upon receiving a DTS-ACTIVATION parameter with a state of 1, the relay begins active track selection.  Active track
-   selection implies that the relay monitor the incoming new groups as well as maintain an estimate of the
-   throughput available in the connection. This throughput estimate SHOULD be applicable over the maximum Group duration of the
-   tracks being switched.
-3. When the first Object 0 of new Group N of track T arrives at the relay, the relay selects the preferred track to forward from the
-   switching set. The preferred track is the track with the highest throughput threshold smaller than or equal to the current
-   throughput estimate. The relay sets the Forward state to 1 for this track and to 0 for all other tracks in the switching set.
-   If no tracks in the switching set satisfy this condition, then all tracks are set to a Forward state of 0. No content will be
-   delivered until the decision is re-evaulated at the next Gorup boundary.
-5. If the track T happens to be the preferred track, then the relay forwards all Objects from that Group and no futher
-   evaluations are required until Group N+1 arrives. If the track T is not the preferred track, then the relay caches the Group of
-   track T and starts a selection timer.
-6. If Group N of the preferred track arrives while the selection timer > selection time limit of that track, then the relay forwards
-   the preferred track, the timer can be stopped and no further evaluations are necessary.
-7. If Group N of the preferred track has not arrived by the time the selection timer reaches the selection time
-   limit, then the relay selects a new preferred track by removing the previously preferred track from its candidate list and
-   re-applying the logic of step 3. If Group N of the new preferred track has already arrived, then it is served from cache,
-   irrespective of its Selection time limit. If Group N of the new preferred track has not yet arrived then the selection process repeats
-   at step 6.
-
-# Conventions and Definitions
-
-{::boilerplate bcp14-tagged}
+   creating the switching set if it does not yet exist. The Forward State of the subscription is set to zero. The
+   Set Throughput Fraction is stored as a property of the switching set.
+2. Upon receiving a SWITCHING-SET-ASSIGNMENT parameter with a Activate switching value of 1, the relay begins active track
+   selection between all the tracks assigned to that switching set.  Active track selection implies that the relay monitors
+   the incoming new groups as well as maintains an estimate of the throughput available in the connection. This throughput
+   estimate SHOULD be applicable over the maximum Group duration of the tracks being switched.
+3. As the first Object 0 of new Group N of track T within switching set S arrives at the relay, the relay calculates the preferred
+   track to forward from the switching set. The preferred track is the track with the highest throughput threshold smaller than
+   or equal to the current throughput estimate divided by the throughput fraction. If the preferred track is T, then the relay sets
+   the Forward state to 1 for this track and to 0 for all other tracks in the switching set. If no tracks in the switching set
+   satisfy this condition, then all tracks are set to a Forward state of 0. No content will be delivered until the decision is
+   re-evaulated at the next Group boundary.
+4. The prior step repeats at each Group boundary as long as the switching set contains at least one track.
+5. The throughput threshold of any track, as well as the throughput fraction of the set and the activate switching state MAY be
+   updated at any time via a REQUEST_UPDATE message associated with any of the constituent tracks within the switching set.
 
 
 # Security Considerations
