@@ -94,7 +94,7 @@ SWITCHING-SET-ASSIGNMENT {
 * Throughput threshold - the minimum throughput, expressed in integer kilobits per second, necessary to select
   this subscription.
 * Set throughput fraction - the fraction of the connection throughput that should be allocated to this switching set,
-  expressed as a positive integer N, such that the set will be allocated 1/N of the estimated connection throughput.
+  expressed as an integer 1 <= N <=10, such that the set will be allocated N/10 of the estimated connection throughput.
 * Activate switching  - 0 if the client will be adding more subscriptions to the set or 1 if the client is complete
   and the relay should activate switching.
 
@@ -147,12 +147,13 @@ from all tracks in the switching set.
    estimate SHOULD be applicable over the maximum Group duration of the tracks being switched.
 3. As the first Object 0 of new Group N of track T within switching set S arrives at the relay, the relay calculates the preferred
    track to forward from the switching set. The preferred track is the track with the highest throughput threshold smaller than
-   or equal to the current throughput estimate divided by the throughput fraction. If the preferred track is T, then the relay sets
-   the Forward state to 1 for this track and to 0 for all other tracks in the switching set. If no tracks in the switching set
-   satisfy this condition, then all tracks are set to a Forward state of 0. No content will be delivered until the decision is
-   re-evaulated at the next Group boundary.
-4. The prior step repeats at each Group boundary as long as the switching set contains at least one track.
-5. The throughput threshold of any track, as well as the throughput fraction of the set and the activate switching state MAY be
+   or equal to the throughput allocated to the set. The throughput allocated to the set is the connection throughput estimate
+   multiplied by the set throughput fraction divided by 10. If the preferred track is T, then the relay sets the Forward state to 1
+   for this track and to 0 for all other tracks in the switching set. If no tracks in the switching set satisfy this condition,
+   then all tracks are set to a Forward state of 0. No content will be delivered until the decision is re-evaulated at the next
+   Group boundary.
+5. The prior step repeats at each Group boundary as long as the switching set contains at least one track.
+6. The throughput threshold of any track, as well as the throughput fraction of the set and the activate switching state MAY be
    updated at any time via a REQUEST_UPDATE message associated with any of the constituent tracks within the switching set.
 
 
