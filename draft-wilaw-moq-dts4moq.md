@@ -112,8 +112,6 @@ dynamically switched by relays.
 - SHOULD indicate which tracks belong to the same switching set or alternate group
   (see {{usecase-abr}}, {{usecase-videoconf}})
 
-- SHOULD indicate content type characteristics and relative priorities when publishing multiple
-  content types (see {{usecase-screenshare}}, {{usecase-gaming}}, {{usecase-teleop}})
 
 - SHOULD publish guaranteed or fixed-bandwidth streams (such as HUD overlays, stats, or telemetry)
   as separate tracks when bandwidth guarantees are needed
@@ -146,6 +144,9 @@ preferences to relays.
   bandwidth allocation (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}},
   {{usecase-sports}}, {{usecase-teleop}})
 
+- SHOULD use content type characteristics from the catalog to determine appropriate relative
+  priorities or weights (see {{usecase-screenshare}}, {{usecase-gaming}}, {{usecase-teleop}})
+
 - MAY dynamically adjust priorities based on changing conditions such as active speaker changes,
   gaze direction updates, or user interaction
   (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-sports}})
@@ -161,7 +162,9 @@ preferences to relays.
 ## Relay Requirements
 
 Relays are responsible for making dynamic track selection decisions and forwarding the
-appropriate groups to downstream subscribers.
+appropriate groups to downstream subscribers. Relays do not have access to the catalog;
+switching metadata is obtained from track properties in publish messages and from
+subscribe parameters in subscribe or subscribe namespace messages.
 
 - MUST track available bandwidth to each downstream subscriber (see {{usecase-abr}})
 
@@ -330,35 +333,35 @@ the available capacity, and switches to a different rendition at group boundarie
 bandwidth conditions change.
 
 ~~~
-                         ┌────────────────────────────────────────────┐
-                         │           Original Publisher               │
-                         │                                            │
-                         │  ┌─────────┐  ┌─────────┐  ┌─────────┐     │
-                         │  │ 1080p   │  │  720p   │  │  480p   │     │
-                         │  │ 5 Mbps  │  │ 2 Mbps  │  │ 800kbps │     │
-                         │  └────┬────┘  └────┬────┘  └────┬────┘     │
-                         │       │            │            │          │
-                         └───────┼────────────┼────────────┼──────────┘
-                                 │            │            │
-                                 ▼            ▼            ▼
-                         ┌─────────────────────────────────────────────┐
-                         │                  Relay                      │
-                         │                                             │
-                         │   Receives all renditions, selects one      │
-                         │   based on throughput thresholds and        │
-                         │   downstream bandwidth                      │
-                         └────────────────────┬────────────────────────┘
-                                              │
-                                              │  Selected rendition
-                                              │  (e.g., 720p @ 2 Mbps)
-                                              ▼
-                         ┌─────────────────────────────────────────────┐
-                         │              End Subscriber                 │
-                         │                                             │
-                         │   Receives single stream, quality varies    │
-                         │   based on available bandwidth              │
-                         │                                             │
-                         └─────────────────────────────────────────────┘
+            ┌──────────────────────────────────────────┐
+            │          Original Publisher              │
+            │                                          │
+            │  ┌─────────┐ ┌─────────┐ ┌─────────┐     │
+            │  │ 1080p   │ │  720p   │ │  480p   │     │
+            │  │ 5 Mbps  │ │ 2 Mbps  │ │ 800kbps │     │
+            │  └────┬────┘ └────┬────┘ └────┬────┘     │
+            │       │           │           │          │
+            └───────┼───────────┼───────────┼──────────┘
+                    │           │           │
+                    ▼           ▼           ▼
+            ┌──────────────────────────────────────────┐
+            │                 Relay                    │
+            │                                          │
+            │  Receives all renditions, selects one    │
+            │  based on throughput thresholds and      │
+            │  downstream bandwidth                    │
+            └───────────────────┬──────────────────────┘
+                                │
+                                │  Selected rendition
+                                │  (e.g., 720p @ 2 Mbps)
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │             End Subscriber               │
+            │                                          │
+            │  Receives single stream, quality varies  │
+            │  based on available bandwidth            │
+            │                                          │
+            └──────────────────────────────────────────┘
 ~~~
 
 ## Multiple Switching Sets
@@ -385,43 +388,42 @@ weights, selecting appropriate quality levels for each participant stream to fit
 the total available bandwidth.
 
 ~~~
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                          Original Publishers                                 │
-│                                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │ Participant │  │ Participant │  │ Participant │  │ Participant │   ...    │
-│  │     A       │  │     B       │  │     C       │  │     D       │          │
-│  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │          │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
-│         │                │                │                │                 │
-└─────────┼────────────────┼────────────────┼────────────────┼─────────────────┘
-          │                │                │                │
-          ▼                ▼                ▼                ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Allocates bandwidth across multiple switching sets (participants)          │
-│   Selects quality per participant based on:                                  │
-│     - Subscriber-indicated weights per switching set                         │
-│     - Total available bandwidth                                              │
-│     - Throughput thresholds per rendition                                    │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Multiple streams at varying qualities
-                                      │  (e.g., A@hi, B@med, C@lo, D@lo)
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             End Subscriber                                   │
-│                                                                              │
-│   ┌───────────────────────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐       │
-│   │                           │  │         │  │         │  │         │       │
-│   │     Participant A         │  │  Part B │  │  Part C │  │  Part D │       │
-│   │     (high quality)        │  │  (med)  │  │  (low)  │  │  (low)  │       │
-│   │                           │  │         │  │         │  │         │       │
-│   └───────────────────────────┘  └─────────┘  └─────────┘  └─────────┘       │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                       Original Publishers                          │
+│                                                                    │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐           │
+│  │ Part. A   │ │ Part. B   │ │ Part. C   │ │ Part. D   │  ...      │
+│  │ hi/med/lo │ │ hi/med/lo │ │ hi/med/lo │ │ hi/med/lo │           │
+│  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘           │
+│        │             │             │             │                 │
+└────────┼─────────────┼─────────────┼─────────────┼─────────────────┘
+         │             │             │             │
+         ▼             ▼             ▼             ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Allocates bandwidth across switching sets (participants)          │
+│  Selects quality per participant based on:                         │
+│    - Subscriber-indicated weights per switching set                │
+│    - Total available bandwidth                                     │
+│    - Throughput thresholds per rendition                           │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Multiple streams at varying qualities
+                               │  (e.g., A@hi, B@med, C@lo, D@lo)
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                         End Subscriber                             │
+│                                                                    │
+│  ┌─────────────────────┐ ┌────────┐ ┌────────┐ ┌────────┐          │
+│  │                     │ │        │ │        │ │        │          │
+│  │   Participant A     │ │ Part B │ │ Part C │ │ Part D │          │
+│  │   (high quality)    │ │ (med)  │ │ (low)  │ │ (low)  │          │
+│  │                     │ │        │ │        │ │        │          │
+│  └─────────────────────┘ └────────┘ └────────┘ └────────┘          │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ~~~
 
 ### Screen Sharing with Video {#usecase-screenshare}
@@ -432,50 +434,50 @@ readability, lower frame rate acceptable). The system needs to prioritize bandwi
 screen sharing and camera video based on content type and subscriber preferences.
 
 The original publisher encodes both screen share and camera video at multiple quality levels,
-publishing each content type as a separate switching set. The publisher indicates that screen
-share has higher priority than camera video. The end subscriber subscribes to both switching
-sets and may specify a minimum acceptable quality (throughput) for the screen share to
-ensure text remains readable. The relay manages bandwidth allocation between the two content types,
+publishing each content type as a separate switching set with content type indicated in the
+catalog. The end subscriber subscribes to both switching sets, assigning higher weight to
+screen share than camera video based on content type, and may specify a minimum acceptable
+quality (throughput) for the screen share to ensure text remains readable. The relay manages bandwidth allocation between the two content types,
 degrading camera video quality before reducing screen share quality when bandwidth becomes constrained.
 
 ~~~
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            Original Publisher                                │
-│                                                                              │
-│   ┌─────────────────────────────┐      ┌─────────────────────────────┐       │
-│   │      Screen Share           │      │      Camera Video           │       │
-│   │  ┌───────┐ ┌───────┐        │      │  ┌───────┐ ┌───────┐        │       │
-│   │  │1080p  │ │ 720p  │        │      │  │ 720p  │ │ 360p  │        │       │
-│   │  │2 Mbps │ │800kbps│        │      │  │1.5Mbps│ │400kbps│        │       │
-│   │  └───┬───┘ └───┬───┘        │      │  └───┬───┘ └───┬───┘        │       │
-│   │      │         │            │      │      │         │            │       │
-│   └──────┼─────────┼────────────┘      └──────┼─────────┼────────────┘       │
-│          │         │                          │         │                    │
-└──────────┼─────────┼──────────────────────────┼─────────┼────────────────────┘
-           │         │                          │         │
-           ▼         ▼                          ▼         ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Manages two switching sets                                                 │
-│   Allocates bandwidth based on subscriber-indicated weights                  │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Screen@1080p + Camera@360p
-                                      │  (prioritizing screen readability)
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             End Subscriber                                   │
-│                                                                              │
-│   ┌───────────────────────────────────────────┐  ┌────────────────────┐      │
-│   │                                           │  │                    │      │
-│   │           Screen Share                    │  │   Camera (small)   │      │
-│   │           (high quality for text)         │  │   (lower quality)  │      │
-│   │                                           │  │                    │      │
-│   └───────────────────────────────────────────┘  └────────────────────┘      │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                        Original Publisher                          │
+│                                                                    │
+│  ┌────────────────────────┐    ┌────────────────────────┐          │
+│  │     Screen Share       │    │     Camera Video       │          │
+│  │ ┌───────┐ ┌───────┐    │    │ ┌───────┐ ┌───────┐    │          │
+│  │ │1080p  │ │ 720p  │    │    │ │ 720p  │ │ 360p  │    │          │
+│  │ │2 Mbps │ │800kbps│    │    │ │1.5Mbps│ │400kbps│    │          │
+│  │ └───┬───┘ └───┬───┘    │    │ └───┬───┘ └───┬───┘    │          │
+│  │     │         │        │    │     │         │        │          │
+│  └─────┼─────────┼────────┘    └─────┼─────────┼────────┘          │
+│        │         │                   │         │                   │
+└────────┼─────────┼───────────────────┼─────────┼───────────────────┘
+         │         │                   │         │
+         ▼         ▼                   ▼         ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Manages two switching sets                                        │
+│  Allocates bandwidth based on subscriber-indicated weights         │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Screen@1080p + Camera@360p
+                               │  (prioritizing screen readability)
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                         End Subscriber                             │
+│                                                                    │
+│  ┌─────────────────────────────────┐  ┌──────────────────┐         │
+│  │                                 │  │                  │         │
+│  │        Screen Share             │  │  Camera (small)  │         │
+│  │     (high quality for text)     │  │  (lower quality) │         │
+│  │                                 │  │                  │         │
+│  └─────────────────────────────────┘  └──────────────────┘         │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ~~~
 
 ### VR/AR Streaming {#usecase-vr}
@@ -498,40 +500,40 @@ peripheral tiles. The relay responds rapidly to these updates, reallocating band
 deliver high quality for the gaze tile while maintaining lower quality for surrounding tiles.
 
 ~~~
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                          VR Headset (Publisher)                              │
-│                                                                              │
-│   360° Video Tiles (each with quality variants)                              │
-│   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                │
-│   │ Tile 1  │ │ Tile 2  │ │ Tile 3  │ │ Tile 4  │ │ Tile 5  │  ...           │
-│   │ hi/lo   │ │ hi/lo   │ │ hi/lo   │ │ hi/lo   │ │ hi/lo   │                │
-│   └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘                │
-│        │           │     [GAZE]│           │           │                     │
-└────────┼───────────┼───────────┼───────────┼───────────┼─────────────────────┘
-         │           │           │           │           │
-         ▼           ▼           ▼           ▼           ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Receives gaze direction updates (weights) from subscriber                  │
-│   Allocates bandwidth: high quality to gaze tile, lower to periphery         │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Tile3@hi, others@lo
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             End Subscriber                                   │
-│                                                                              │
-│   ┌─────────────────────────────────────────────────────────────────┐        │
-│   │                      360° Rendered View                         │        │
-│   │  ┌──────┐ ┌──────┐ ┌────────────────┐ ┌──────┐ ┌──────┐         │        │
-│   │  │ lo   │ │ lo   │ │      hi        │ │ lo   │ │ lo   │         │        │
-│   │  │      │ │      │ │   (gaze area)  │ │      │ │      │         │        │
-│   │  └──────┘ └──────┘ └────────────────┘ └──────┘ └──────┘         │        │
-│   └─────────────────────────────────────────────────────────────────┘        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                      VR Headset (Publisher)                        │
+│                                                                    │
+│  360° Video Tiles (each with quality variants)                     │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐            │
+│  │ Tile 1 │ │ Tile 2 │ │ Tile 3 │ │ Tile 4 │ │ Tile 5 │  ...       │
+│  │ hi/lo  │ │ hi/lo  │ │ hi/lo  │ │ hi/lo  │ │ hi/lo  │            │
+│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘            │
+│      │          │    [GAZE]│          │          │                 │
+└──────┼──────────┼──────────┼──────────┼──────────┼─────────────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Receives gaze direction updates (weights) from subscriber         │
+│  Allocates bandwidth: high quality to gaze tile, lower to periph.  │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Tile3@hi, others@lo
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                         End Subscriber                             │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │                    360° Rendered View                    │      │
+│  │  ┌─────┐ ┌─────┐ ┌─────────────┐ ┌─────┐ ┌─────┐         │      │
+│  │  │ lo  │ │ lo  │ │     hi      │ │ lo  │ │ lo  │         │      │
+│  │  │     │ │     │ │ (gaze area) │ │     │ │     │         │      │
+│  │  └─────┘ └─────┘ └─────────────┘ └─────┘ └─────┘         │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ~~~
 
 ## Switching Set(s) with Guaranteed Streams
@@ -552,7 +554,7 @@ Additionally, different regions of the game screen may have different importance
 main game world adapts to remaining bandwidth.
 
 The original publisher (game server) encodes the game world video at multiple quality levels
-and publishes the HUD as a separate fixed-bandwidth track with high priority. The publisher
+and publishes the HUD as a separate fixed-bandwidth track. The publisher
 minimizes encoding latency to maintain gameplay responsiveness. The end subscriber subscribes
 to both the game video switching set and the HUD track, indicating that the HUD requires
 guaranteed bandwidth. The relay reserves bandwidth for the HUD first, then selects the
@@ -560,46 +562,46 @@ appropriate game video quality from the remaining capacity, prioritizing low lat
 throughout the forwarding path.
 
 ~~~
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         Game Server (Publisher)                              │
-│                                                                              │
-│   ┌─────────────────────────────────┐  ┌─────────────────────────────┐       │
-│   │       Game World Video          │  │      HUD/Overlay            │       │
-│   │  ┌───────┐ ┌───────┐ ┌───────┐  │  │  ┌───────┐                  │       │
-│   │  │4K/60  │ │1080/60│ │720/60 │  │  │  │ Fixed │                  │       │
-│   │  │25Mbps │ │8 Mbps │ │3 Mbps │  │  │  │200kbps│                  │       │
-│   │  └───┬───┘ └───┬───┘ └───┬───┘  │  │  └───┬───┘                  │       │
-│   └──────┼─────────┼─────────┼──────┘  └──────┼──────────────────────┘       │
-│          │         │         │                │                              │
-└──────────┼─────────┼─────────┼─────────────── ┼──────────────────────────────┘
-           │         │         │                │
-           ▼         ▼         ▼                ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Reserves HUD bandwidth first (subscriber-indicated guaranteed stream)      │
-│   Selects game quality from remainder based on throughput thresholds         │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Game@1080/60 + HUD@fixed
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              Player (Subscriber)                             │
-│                                                                              │
-│   ┌─────────────────────────────────────────────────────────────────┐        │
-│   │  ┌─────────────────────────────────────────────────────────┐    │        │
-│   │  │                                                         │    │        │
-│   │  │                    Game World                           │    │        │
-│   │  │                  (adaptive quality)                     │    │        │
-│   │  │                                                         │    │        │
-│   │  └─────────────────────────────────────────────────────────┘    │        │
-│   │  ┌─────────────────┐                      ┌─────────────────┐   │        │
-│   │  │ Health: XXXX--- │                      │  Ammo: 30/120   │   │        │
-│   │  └─────────────────┘    HUD (guaranteed)  └─────────────────┘   │        │
-│   └─────────────────────────────────────────────────────────────────┘        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                     Game Server (Publisher)                        │
+│                                                                    │
+│  ┌───────────────────────────────┐  ┌─────────────────────┐        │
+│  │      Game World Video         │  │    HUD/Overlay      │        │
+│  │ ┌───────┐ ┌───────┐ ┌───────┐ │  │ ┌───────┐           │        │
+│  │ │4K/60  │ │1080/60│ │720/60 │ │  │ │ Fixed │           │        │
+│  │ │25Mbps │ │8 Mbps │ │3 Mbps │ │  │ │200kbps│           │        │
+│  │ └───┬───┘ └───┬───┘ └───┬───┘ │  │ └───┬───┘           │        │
+│  └─────┼─────────┼─────────┼─────┘  └─────┼───────────────┘        │
+│        │         │         │              │                        │
+└────────┼─────────┼─────────┼──────────────┼────────────────────────┘
+         │         │         │              │
+         ▼         ▼         ▼              ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Reserves HUD bandwidth (subscriber-indicated guaranteed stream)   │
+│  Selects game quality from remainder based on throughput           │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Game@1080/60 + HUD@fixed
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                       Player (Subscriber)                          │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │ ┌──────────────────────────────────────────────────────┐ │      │
+│  │ │                                                      │ │      │
+│  │ │                   Game World                         │ │      │
+│  │ │                 (adaptive quality)                   │ │      │
+│  │ │                                                      │ │      │
+│  │ └──────────────────────────────────────────────────────┘ │      │
+│  │ ┌──────────────┐                    ┌──────────────┐     │      │
+│  │ │Health: XXX---│                    │ Ammo: 30/120 │     │      │
+│  │ └──────────────┘  HUD (guaranteed)  └──────────────┘     │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ~~~
 
 ### Live Sports Multi-View {#usecase-sports}
@@ -612,7 +614,7 @@ based on viewer preferences that may change during the event (e.g., switching fo
 replay angle).
 
 The original publisher (broadcast origin) encodes each camera angle at multiple quality
-levels and publishes a stats overlay as a separate guaranteed stream. All streams share
+levels and publishes a stats overlay as a separate fixed-bandwidth stream. All streams share
 a common time reference for synchronization. The end subscriber subscribes to desired
 camera angles and the stats overlay, assigning weights to indicate which views are most
 important. During highlights or replays, the subscriber dynamically adjusts priority
@@ -621,42 +623,42 @@ subscriber weights, maintains temporal sync across all forwarded streams, and re
 promptly to priority changes.
 
 ~~~
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         Broadcast Origin (Publisher)                         │
-│                                                                              │
-│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
-│  │  Main Camera  │ │   Sideline    │ │    Aerial     │ │  Stats/Score  │     │
-│  │  hi/med/lo    │ │  hi/med/lo    │ │  hi/med/lo    │ │   (fixed)     │     │
-│  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
-│          │                 │                 │                 │             │
-└──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
-           │                 │                 │                 │
-           ▼                 ▼                 ▼                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Reserves stats bandwidth (subscriber-indicated guaranteed stream)          │
-│   Allocates remaining bandwidth based on subscriber-indicated weights        │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Main@hi, Sideline@med, Aerial@lo, Stats
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                             Viewer (Subscriber)                              │
-│                                                                              │
-│   ┌────────────────────────────────────────┐  ┌──────────────────────┐       │
-│   │                                        │  │    Sideline View     │       │
-│   │           Main Camera View             │  │    (medium quality)  │       │
-│   │           (high quality)               │  ├──────────────────────┤       │
-│   │                                        │  │    Aerial View       │       │
-│   │                                        │  │    (low quality)     │       │
-│   └────────────────────────────────────────┘  └──────────────────────┘       │
-│   ┌─────────────────────────────────────────────────────────────────┐        │
-│   │  SCORE: Home 2 - Away 1  |  Time: 73:24  |  Possession: 58%     │        │
-│   └─────────────────────────────────────────────────────────────────┘        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                   Broadcast Origin (Publisher)                     │
+│                                                                    │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐       │
+│  │ Main Cam   │ │  Sideline  │ │   Aerial   │ │Stats/Score │       │
+│  │ hi/med/lo  │ │ hi/med/lo  │ │ hi/med/lo  │ │  (fixed)   │       │
+│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘       │
+│        │              │              │              │              │
+└────────┼──────────────┼──────────────┼──────────────┼──────────────┘
+         │              │              │              │
+         ▼              ▼              ▼              ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Reserves stats bandwidth (subscriber-indicated guaranteed stream) │
+│  Allocates remaining bandwidth based on subscriber-indicated wts   │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Main@hi, Sideline@med, Aerial@lo, Stats
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                       Viewer (Subscriber)                          │
+│                                                                    │
+│  ┌────────────────────────────────┐  ┌───────────────────┐         │
+│  │                                │  │   Sideline View   │         │
+│  │      Main Camera View          │  │  (medium quality) │         │
+│  │      (high quality)            │  ├───────────────────┤         │
+│  │                                │  │   Aerial View     │         │
+│  │                                │  │   (low quality)   │         │
+│  └────────────────────────────────┘  └───────────────────┘         │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │ SCORE: Home 2 - Away 1 | Time: 73:24 | Possession: 58%   │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ~~~
 
 ### Teleoperation and Robotics {#usecase-teleop}
@@ -669,7 +671,7 @@ compete for bandwidth with video feeds.
 
 The original publisher (robot or drone) encodes the primary control camera at multiple
 quality levels with minimal encoding latency, encodes situational cameras at multiple
-levels, and publishes sensor telemetry as a separate guaranteed stream. All streams
+levels, and publishes sensor telemetry as a separate fixed-bandwidth stream. All streams
 share a common time reference. The end subscriber subscribes to the primary camera
 with highest priority and specifies latency requirements, subscribes to telemetry with
 guaranteed bandwidth, and subscribes to situational cameras with lower priority. The
@@ -677,43 +679,43 @@ relay prioritizes latency for the primary camera, reserves bandwidth for telemet
 and allocates remaining capacity to situational cameras.
 
 ~~~
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           Robot (Publisher)                                  │
-│                                                                              │
-│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
-│  │ Primary Cam   │ │  Left Cam     │ │  Right Cam    │ │  Telemetry    │     │
-│  │ (manipulation)│ │ (situational) │ │ (situational) │ │  (sensors)    │     │
-│  │  hi/med/lo    │ │  hi/lo        │ │  hi/lo        │ │  (fixed)      │     │
-│  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
-│          │                 │                 │                 │             │
-└──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
-           │                 │                 │                 │
-           ▼                 ▼                 ▼                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                  Relay                                       │
-│                                                                              │
-│   Allocates bandwidth based on subscriber-indicated weights                  │
-│   Latency-critical: minimize delay for primary control feed                  │
-│                                                                              │
-└─────────────────────────────────────┬────────────────────────────────────────┘
-                                      │
-                                      │  Primary@hi, Left@lo, Right@lo, Telemetry
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         Operator Console (Subscriber)                        │
-│                                                                              │
-│   ┌────────────────────────────────────────────────────────────────┐         │
-│   │                                                                │         │
-│   │              Primary Camera (high quality, low latency)        │         │
-│   │                                                                │         │
-│   └────────────────────────────────────────────────────────────────┘         │
-│   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐           │
-│   │   Left Camera    │  │   Right Camera   │  │   Telemetry      │           │
-│   │   (low quality)  │  │   (low quality)  │  │ Temp: 45°C       │           │
-│   │                  │  │                  │  │ Battery: 73%     │           │
-│   └──────────────────┘  └──────────────────┘  └──────────────────┘           │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                        Robot (Publisher)                           │
+│                                                                    │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│  │ Primary Cam │ │  Left Cam   │ │  Right Cam  │ │  Telemetry  │   │
+│  │(manipulate) │ │(situational)│ │(situational)│ │  (sensors)  │   │
+│  │ hi/med/lo   │ │   hi/lo     │ │   hi/lo     │ │  (fixed)    │   │
+│  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘   │
+│         │               │               │               │          │
+└─────────┼───────────────┼───────────────┼───────────────┼──────────┘
+          │               │               │               │
+          ▼               ▼               ▼               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Allocates bandwidth based on subscriber-indicated weights         │
+│  Latency-critical: minimize delay for primary control feed         │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Primary@hi, Left@lo, Right@lo, Telemetry
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                    Operator Console (Subscriber)                   │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │                                                          │      │
+│  │          Primary Camera (high quality, low latency)      │      │
+│  │                                                          │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐        │
+│  │  Left Camera   │  │  Right Camera  │  │   Telemetry    │        │
+│  │  (low quality) │  │  (low quality) │  │ Temp: 45°C     │        │
+│  │                │  │                │  │ Battery: 73%   │        │
+│  └────────────────┘  └────────────────┘  └────────────────┘        │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ~~~
 
 # Acknowledgments
