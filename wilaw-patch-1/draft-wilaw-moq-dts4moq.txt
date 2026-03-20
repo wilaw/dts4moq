@@ -5,7 +5,7 @@
 Media Over QUIC                                                   W. Law
 Internet-Draft                                                    Akamai
 Intended status: Informational                                  I. Swett
-Expires: 20 September 2026                                        Google
+Expires: 21 September 2026                                        Google
                                                            S. Nandakumar
                                                                M. Zanaty
                                                                    Cisco
@@ -16,7 +16,7 @@ Expires: 20 September 2026                                        Google
                                                       Ozyegin University
                                                                 G. Simon
                                                                Synamedia
-                                                           19 March 2026
+                                                           20 March 2026
 
 
                 Dynamic Track Switching for MOQT relays
@@ -59,7 +59,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 20 September 2026.
+   This Internet-Draft will expire on 21 September 2026.
 
 Copyright Notice
 
@@ -131,8 +131,8 @@ Table of Contents
 
    *  Set throughput fraction - the fraction of the connection
       throughput that should be allocated to this switching set,
-      expressed as a positive integer N, such that the set will be
-      allocated 1/N of the estimated connection throughput.
+      expressed as an integer 1 <= N <=10, such that the set will be
+      allocated N/10 of the estimated connection throughput.
 
    *  Activate switching - 0 if the client will be adding more
       subscriptions to the set or 1 if the client is complete and the
@@ -214,13 +214,15 @@ Table of Contents
        set S arrives at the relay, the relay calculates the preferred
        track to forward from the switching set.  The preferred track is
        the track with the highest throughput threshold smaller than or
-       equal to the current throughput estimate divided by the
-       throughput fraction.  If the preferred track is T, then the relay
-       sets the Forward state to 1 for this track and to 0 for all other
-       tracks in the switching set.  If no tracks in the switching set
-       satisfy this condition, then all tracks are set to a Forward
-       state of 0.  No content will be delivered until the decision is
-       re-evaulated at the next Group boundary.
+       equal to the throughput allocated to the set.  The throughput
+       allocated to the set is the connection throughput estimate
+       multiplied by the set throughput fraction divided by 10.  If the
+       preferred track is T, then the relay sets the Forward state to 1
+       for this track and to 0 for all other tracks in the switching
+       set.  If no tracks in the switching set satisfy this condition,
+       then all tracks are set to a Forward state of 0.  No content will
+       be delivered until the decision is re-evaulated at the next Group
+       boundary.
 
    4.  The prior step repeats at each Group boundary as long as the
        switching set contains at least one track.
