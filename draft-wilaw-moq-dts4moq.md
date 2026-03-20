@@ -336,7 +336,6 @@ bandwidth conditions change.
                          │  ┌─────────┐  ┌─────────┐  ┌─────────┐     │
                          │  │ 1080p   │  │  720p   │  │  480p   │     │
                          │  │ 5 Mbps  │  │ 2 Mbps  │  │ 800kbps │     │
-                         │  │ prio: 1 │  │ prio: 2 │  │ prio: 3 │     │
                          │  └────┬────┘  └────┬────┘  └────┬────┘     │
                          │       │            │            │          │
                          └───────┼────────────┼────────────┼──────────┘
@@ -346,7 +345,7 @@ bandwidth conditions change.
                          │                  Relay                      │
                          │                                             │
                          │   Receives all renditions, selects one      │
-                         │   based on publisher priorities and         │
+                         │   based on throughput thresholds and        │
                          │   downstream bandwidth                      │
                          └────────────────────┬────────────────────────┘
                                               │
@@ -393,7 +392,6 @@ the total available bandwidth.
 │  │ Participant │  │ Participant │  │ Participant │  │ Participant │   ...    │
 │  │     A       │  │     B       │  │     C       │  │     D       │          │
 │  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │          │
-│  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │          │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
 │         │                │                │                │                 │
 └─────────┼────────────────┼────────────────┼────────────────┼─────────────────┘
@@ -404,9 +402,9 @@ the total available bandwidth.
 │                                                                              │
 │   Allocates bandwidth across multiple switching sets (participants)          │
 │   Selects quality per participant based on:                                  │
-│     - Publisher-indicated rendition priorities                               │
+│     - Subscriber-indicated weights per switching set                         │
 │     - Total available bandwidth                                              │
-│     - Subscriber-indicated priorities/weights                                │
+│     - Throughput thresholds per rendition                                    │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
                                       │
@@ -446,11 +444,9 @@ degrading camera video quality before reducing screen share quality when bandwid
 │                                                                              │
 │   ┌─────────────────────────────┐      ┌─────────────────────────────┐       │
 │   │      Screen Share           │      │      Camera Video           │       │
-│   │      (prio: high)           │      │      (prio: low)            │       │
 │   │  ┌───────┐ ┌───────┐        │      │  ┌───────┐ ┌───────┐        │       │
 │   │  │1080p  │ │ 720p  │        │      │  │ 720p  │ │ 360p  │        │       │
 │   │  │2 Mbps │ │800kbps│        │      │  │1.5Mbps│ │400kbps│        │       │
-│   │  │prio:1 │ │prio:2 │        │      │  │prio:3 │ │prio:4 │        │       │
 │   │  └───┬───┘ └───┬───┘        │      │  └───┬───┘ └───┬───┘        │       │
 │   │      │         │            │      │      │         │            │       │
 │   └──────┼─────────┼────────────┘      └──────┼─────────┼────────────┘       │
@@ -461,8 +457,8 @@ degrading camera video quality before reducing screen share quality when bandwid
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                  Relay                                       │
 │                                                                              │
-│   Manages two switching sets with publisher-indicated content priorities     │
-│   Allocates bandwidth based on content type and rendition priorities         │
+│   Manages two switching sets                                                 │
+│   Allocates bandwidth based on subscriber-indicated weights                  │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
                                       │
@@ -505,11 +501,10 @@ deliver high quality for the gaze tile while maintaining lower quality for surro
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                          VR Headset (Publisher)                              │
 │                                                                              │
-│   360° Video Tiles (each with quality variants and priorities)               │
+│   360° Video Tiles (each with quality variants)                              │
 │   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                │
 │   │ Tile 1  │ │ Tile 2  │ │ Tile 3  │ │ Tile 4  │ │ Tile 5  │  ...           │
-│   │hi/lo    │ │hi/lo    │ │hi/lo    │ │hi/lo    │ │hi/lo    │                │
-│   │prio:1/2 │ │prio:1/2 │ │prio:1/2 │ │prio:1/2 │ │prio:1/2 │                │
+│   │ hi/lo   │ │ hi/lo   │ │ hi/lo   │ │ hi/lo   │ │ hi/lo   │                │
 │   └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘                │
 │        │           │     [GAZE]│           │           │                     │
 └────────┼───────────┼───────────┼───────────┼───────────┼─────────────────────┘
@@ -518,8 +513,7 @@ deliver high quality for the gaze tile while maintaining lower quality for surro
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                  Relay                                       │
 │                                                                              │
-│   Uses publisher rendition priorities within each tile                       │
-│   Receives gaze direction updates from subscriber                            │
+│   Receives gaze direction updates (weights) from subscriber                  │
 │   Allocates bandwidth: high quality to gaze tile, lower to periphery         │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
@@ -571,12 +565,10 @@ throughout the forwarding path.
 │                                                                              │
 │   ┌─────────────────────────────────┐  ┌─────────────────────────────┐       │
 │   │       Game World Video          │  │      HUD/Overlay            │       │
-│   │       (prio: low)               │  │      (prio: high)           │       │
 │   │  ┌───────┐ ┌───────┐ ┌───────┐  │  │  ┌───────┐                  │       │
 │   │  │4K/60  │ │1080/60│ │720/60 │  │  │  │ Fixed │                  │       │
 │   │  │25Mbps │ │8 Mbps │ │3 Mbps │  │  │  │200kbps│                  │       │
-│   │  │prio:1 │ │prio:2 │ │prio:3 │  │  │  └───┬───┘                  │       │
-│   │  └───┬───┘ └───┬───┘ └───┬───┘  │  │      │                      │       │
+│   │  └───┬───┘ └───┬───┘ └───┬───┘  │  │  └───┬───┘                  │       │
 │   └──────┼─────────┼─────────┼──────┘  └──────┼──────────────────────┘       │
 │          │         │         │                │                              │
 └──────────┼─────────┼─────────┼─────────────── ┼──────────────────────────────┘
@@ -585,8 +577,8 @@ throughout the forwarding path.
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                  Relay                                       │
 │                                                                              │
-│   Uses publisher priorities: HUD (high) + game video renditions (1/2/3)      │
-│   Reserves HUD bandwidth first, selects game quality from remainder          │
+│   Reserves HUD bandwidth first (subscriber-indicated guaranteed stream)      │
+│   Selects game quality from remainder based on throughput thresholds         │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
                                       │
@@ -635,7 +627,6 @@ promptly to priority changes.
 │  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
 │  │  Main Camera  │ │   Sideline    │ │    Aerial     │ │  Stats/Score  │     │
 │  │  hi/med/lo    │ │  hi/med/lo    │ │  hi/med/lo    │ │   (fixed)     │     │
-│  │  prio:1/2/3   │ │  prio:1/2/3   │ │  prio:1/2/3   │ │  prio: high   │     │
 │  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
 │          │                 │                 │                 │             │
 └──────────┼─────────────────┼─────────────────┼─────────────────┼─────────────┘
@@ -644,8 +635,8 @@ promptly to priority changes.
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                  Relay                                       │
 │                                                                              │
-│   Uses publisher priorities: renditions (1/2/3), stats (high)                │
-│   Allocates bandwidth based on subscriber-selected camera priorities         │
+│   Reserves stats bandwidth (subscriber-indicated guaranteed stream)          │
+│   Allocates remaining bandwidth based on subscriber-indicated weights        │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
                                       │
@@ -692,7 +683,6 @@ and allocates remaining capacity to situational cameras.
 │  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐     │
 │  │ Primary Cam   │ │  Left Cam     │ │  Right Cam    │ │  Telemetry    │     │
 │  │ (manipulation)│ │ (situational) │ │ (situational) │ │  (sensors)    │     │
-│  │  prio: high   │ │  prio: low    │ │  prio: low    │ │  prio: high   │     │
 │  │  hi/med/lo    │ │  hi/lo        │ │  hi/lo        │ │  (fixed)      │     │
 │  └───────┬───────┘ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘     │
 │          │                 │                 │                 │             │
@@ -702,7 +692,7 @@ and allocates remaining capacity to situational cameras.
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                  Relay                                       │
 │                                                                              │
-│   Publisher priorities: content type (high/low) + renditions (1/2/3)         │
+│   Allocates bandwidth based on subscriber-indicated weights                  │
 │   Latency-critical: minimize delay for primary control feed                  │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
