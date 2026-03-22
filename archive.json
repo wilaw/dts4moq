@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-19T01:29:46.096360+00:00",
+  "timestamp": "2026-03-22T01:42:00.032590+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -203,15 +203,15 @@
       "id": "I_kwDOROSEss7rvKqY",
       "title": "lag behind live and cache",
       "url": "https://github.com/wilaw/dts4moq/issues/8",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "gwendalsimon",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "During congestion, the Subscriber lags behind live. It is expected to be less an issue in this adaptive mechanism, but it can still happen. In case the Relay has received several new groups for some tracks, and it cached these groups, should it still refer to the timer result to identify which tracks are qualified for selection?\n\nFor example, say that the Relay just finished transmission of group 30. It has in its cache\nTrack A groups 31, 32, 33. For each of these groups, Track A was the first track to trigger the timer.\nTrack B groups 31 (arrived before timer expiration), 32 (arrived after expiration), and 33 (arrived before expiration). Track B is the preferred track.\n\nShould the Relay switch to track A for group 31 and back to track B at 32?",
       "createdAt": "2026-02-17T22:52:45Z",
-      "updatedAt": "2026-03-18T19:23:29Z",
-      "closedAt": null,
+      "updatedAt": "2026-03-20T07:25:18Z",
+      "closedAt": "2026-03-20T07:25:18Z",
       "comments": [
         {
           "author": "wilaw",
@@ -226,6 +226,20 @@
           "body": "> > Should the Relay switch to track A for group 31 and back to track B at 32?\n> \n> Yes, it should. Group 31 for B was late according to the rules the client set, so the relay sent the next preferred track, which is A.\n> \n> This assumes the bitrate A < bitrate B. If A> B, then the relay should either send nothing for that group, or send B even though it was late. what do you think?\n\nAs said in https://github.com/wilaw/dts4moq/issues/6#issuecomment-4084855051, I would prefer ignoring what the timer said some time ago. Here, since I have groups for both tracks, I would choose my preferred track for all groups, regardless of whether they met the timer deadline. ",
           "createdAt": "2026-03-18T19:23:29Z",
           "updatedAt": "2026-03-18T19:23:29Z"
+        },
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "Based on feedback at IETF #125, I removed all timers with PR #16 . The solution now stays pinned to the preferred track irrespective of how late it is. This largely reflects real world behavior in which tracks will mostly arrive closely to each other. we are only looking for the first byte of each object to be received, not the whole object,so arrival time is relatively decoupled from the size of each object. \n\n\n> For example, say that the Relay just finished transmission of group 30. It has in its cache\n> Track A groups 31, 32, 33. For each of these groups, Track A was the first track to trigger the timer.\n> Track B groups 31 (arrived before timer expiration), 32 (arrived after expiration), and 33 (arrived before expiration). Track B is the preferred track.\n\nWith the new implementation, DTS would deliver  B 31. \n\nIf you agree with this, can you close this issue? ",
+          "createdAt": "2026-03-20T07:16:12Z",
+          "updatedAt": "2026-03-20T07:16:12Z"
+        },
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": "Wonderful! Yes, we can close this issue.\nNote that dismissing timer is also in the SWITCH proposal. ",
+          "createdAt": "2026-03-20T07:25:18Z",
+          "updatedAt": "2026-03-20T07:25:18Z"
         }
       ]
     },
@@ -327,15 +341,15 @@
       "id": "I_kwDOROSEss7zFRiG",
       "title": "Bandwidth estimates are per connection",
       "url": "https://github.com/wilaw/dts4moq/issues/12",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "afrind",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "The algorithm seems to assume that the switching set consumes the entire bandwidth of the connection, but there are likely other tracks.\n\nHow does the subscriber communicate the fractional share of bandwidth allocated to a given switching set?  e.g. 5 meeting participants with 3 video tracks each, plus audio tracks.",
       "createdAt": "2026-03-15T12:02:59Z",
-      "updatedAt": "2026-03-16T04:19:02Z",
-      "closedAt": null,
+      "updatedAt": "2026-03-20T02:24:17Z",
+      "closedAt": "2026-03-20T02:24:17Z",
       "comments": [
         {
           "author": "wilaw",
@@ -367,16 +381,40 @@
       "id": "I_kwDOROSEss7z8JwL",
       "title": "Feedback from IETF#125",
       "url": "https://github.com/wilaw/dts4moq/issues/15",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "wilaw",
       "authorAssociation": "OWNER",
       "assignees": [],
       "labels": [],
       "body": "1. Remove the Selection time limit attribute from the SWITCHING-SET-ASSIGNMENT parameter. The feeling was that this complicated the implementation. It's utility is to enable the relay to select a lower bitrate track if the preferred track arrives late. The group felt that this would occur infrequently enough and if it did, then the existing delivery timeout feature of MOQT would kick-in and the client could remove the offending track from the switching set.\n\n2. Remove the DTS-ACTIVATION parameter and replace its functionality with a flag in the SWITCHING-SET-ASSIGNMENT parameter. ",
       "createdAt": "2026-03-18T04:27:58Z",
-      "updatedAt": "2026-03-18T04:27:58Z",
-      "closedAt": null,
+      "updatedAt": "2026-03-20T02:24:17Z",
+      "closedAt": "2026-03-20T02:24:17Z",
       "comments": []
+    },
+    {
+      "number": 17,
+      "id": "I_kwDOROSEss70YLbo",
+      "title": "Clarify the applicability of DTS for layered coding",
+      "url": "https://github.com/wilaw/dts4moq/issues/17",
+      "state": "CLOSED",
+      "author": "zaheduzzaman",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "Based on our discussion at IETF125, it should be made clear that the DTS is not desinged for trackes with layered coding, as the base layer cannot be switched. For that case one way of doing it is to use track priority. \n\n",
+      "createdAt": "2026-03-19T07:56:11Z",
+      "updatedAt": "2026-03-20T02:26:41Z",
+      "closedAt": "2026-03-20T02:26:41Z",
+      "comments": [
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "@zaheduzzaman  - PR #16 added the language \n\n> For tracks to participate in a dynamic switching set, they:\n> \n> * MUST be time aligned at group boundaries.\n> * MUST hold equivalent and independent versions of the same content, encoded at different bitrates. DTS is not a solution for switching between Scalable Video Coding (SVC) layers.",
+          "createdAt": "2026-03-20T02:26:41Z",
+          "updatedAt": "2026-03-20T02:26:41Z"
+        }
+      ]
     }
   ],
   "pulls": [
@@ -453,24 +491,26 @@
       "id": "PR_kwDOROSEss7LHvkz",
       "title": "Add use-cases",
       "url": "https://github.com/wilaw/dts4moq/pull/14",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "suhasHere",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "This PR adds a list of use-cases where DTS for MOQ is very useful and helps drive the requirements as well.",
       "createdAt": "2026-03-17T06:15:20Z",
-      "updatedAt": "2026-03-18T05:20:11Z",
+      "updatedAt": "2026-03-20T02:17:34Z",
       "baseRepository": "wilaw/dts4moq",
       "baseRefName": "main",
       "baseRefOid": "8f01b005a401ef0857fa326001689653b8a59691",
       "headRepository": "wilaw/dts4moq",
       "headRefName": "snk-usecases",
-      "headRefOid": "984c08277296eaa3e9ea8dab599f9bef4e923db8",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "dd8d2301068ae848b198a7cf0e396f474fd504b6",
+      "closedAt": "2026-03-20T02:17:31Z",
+      "mergedAt": "2026-03-20T02:17:31Z",
+      "mergedBy": "wilaw",
+      "mergeCommit": {
+        "oid": "25723e65fe53adb4b1a008d6761d484e559972b1"
+      },
       "comments": [
         {
           "author": "wilaw",
@@ -506,6 +546,146 @@
               "updatedAt": "2026-03-18T05:16:32Z"
             }
           ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7sWD3i",
+          "commit": {
+            "abbreviatedOid": "dd8d230"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2026-03-18T05:37:40Z",
+          "updatedAt": "2026-03-20T02:17:05Z",
+          "comments": [
+            {
+              "originalPosition": 73,
+              "body": "While it is fine for the subscriber to indicate the weigth or fraction of the connection which a particular set should consume, we already have the SUBSCRIBER_PRIORITY parameter in MOQT for SUBSCRIPTIONS. Adding in another layer of priority via DTS will complicate things and should be avoided. The client can express priority using the existing priority mechanisms. ",
+              "createdAt": "2026-03-18T05:37:40Z",
+              "updatedAt": "2026-03-20T02:17:05Z"
+            },
+            {
+              "originalPosition": 77,
+              "body": "Priority should not be adjusted via DTS. ",
+              "createdAt": "2026-03-18T05:38:09Z",
+              "updatedAt": "2026-03-20T02:17:05Z"
+            },
+            {
+              "originalPosition": 109,
+              "body": "Would prefer to leave priorities out of DTS.",
+              "createdAt": "2026-03-18T05:39:00Z",
+              "updatedAt": "2026-03-20T02:17:05Z"
+            },
+            {
+              "originalPosition": 114,
+              "body": "The relay SHOULD allocate based on relative weights/fractions, but can honor the priority originally assigned to the subscription. ",
+              "createdAt": "2026-03-18T06:43:58Z",
+              "updatedAt": "2026-03-20T02:17:05Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "id": "PR_kwDOROSEss7Lw8Qs",
+      "title": "Remove the DTS-ACTIVATION parameter & add fractional support.",
+      "url": "https://github.com/wilaw/dts4moq/pull/16",
+      "state": "MERGED",
+      "author": "wilaw",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Fixes #15 \r\nFixes #12 ",
+      "createdAt": "2026-03-19T06:57:49Z",
+      "updatedAt": "2026-03-20T02:24:18Z",
+      "baseRepository": "wilaw/dts4moq",
+      "baseRefName": "main",
+      "baseRefOid": "25723e65fe53adb4b1a008d6761d484e559972b1",
+      "headRepository": "wilaw/dts4moq",
+      "headRefName": "wilaw-patch-1",
+      "headRefOid": "09681703f7128272f3be6319d32558c61f63f875",
+      "closedAt": "2026-03-20T02:24:15Z",
+      "mergedAt": "2026-03-20T02:24:15Z",
+      "mergedBy": "wilaw",
+      "mergeCommit": {
+        "oid": "cc4c2ba19e20114d9775103b63821c3d829572fc"
+      },
+      "comments": [],
+      "reviews": [
+        {
+          "id": "PRR_kwDOROSEss7s1Qz2",
+          "commit": {
+            "abbreviatedOid": "ffb0e15"
+          },
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-03-19T07:49:41Z",
+          "updatedAt": "2026-03-19T07:49:41Z",
+          "comments": [
+            {
+              "originalPosition": 64,
+              "body": "Having two integer (numerator and denominator) would be better. I typically want to use 4/5th of my bandwidth for video",
+              "createdAt": "2026-03-19T07:49:41Z",
+              "updatedAt": "2026-03-19T07:49:41Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7tJ6W-",
+          "commit": {
+            "abbreviatedOid": "ffb0e15"
+          },
+          "author": "suhasHere",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "one minor nit",
+          "createdAt": "2026-03-20T01:00:05Z",
+          "updatedAt": "2026-03-20T01:00:13Z",
+          "comments": [
+            {
+              "originalPosition": 64,
+              "body": "+1. we need to have num/den so that that resulting number is <1 ",
+              "createdAt": "2026-03-20T01:00:05Z",
+              "updatedAt": "2026-03-20T01:00:13Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7tKMdF",
+          "commit": {
+            "abbreviatedOid": "ffb0e15"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-03-20T01:34:55Z",
+          "updatedAt": "2026-03-20T01:34:56Z",
+          "comments": [
+            {
+              "originalPosition": 64,
+              "body": "I agree. I think if we allow specification  as any numerator/denominator than we imply a degree of precision which the relay cannot achieve. Allocating bandwidth is very difficult for a relay to do accurately. Specifying a fraction of 48/77 is unlikely to be met, but specifying a more general target of 60% \r\n\r\nInstead, I propose that we allow the fraction to be specified in increments of 10%, from 10% to 100%. This reduces the precision but a) can be expressed as a single number N/10 and b) More closely matches the precision which the relay is likely to be able to obtain. c) gives you enough real world ability to shard bandwidth between sets. \r\n\r\nI have gone ahead and made this change with commit https://github.com/wilaw/dts4moq/pull/16/changes/e593743be51247e877ceff5b25e9ece7398e55b0.\r\n\r\nLet me know if this satisfies your requirement. ",
+              "createdAt": "2026-03-20T01:34:56Z",
+              "updatedAt": "2026-03-20T01:34:56Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7tKOQq",
+          "commit": {
+            "abbreviatedOid": "e593743"
+          },
+          "author": "suhasHere",
+          "authorAssociation": "COLLABORATOR",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2026-03-20T01:39:40Z",
+          "updatedAt": "2026-03-20T01:39:40Z",
+          "comments": []
         }
       ]
     }
