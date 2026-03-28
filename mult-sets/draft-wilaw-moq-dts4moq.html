@@ -1,0 +1,3229 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>Dynamic Track Switching for MOQT relays</title>
+<meta content="Will Law" name="author">
+<meta content="Ian Swett" name="author">
+<meta content="Suhas Nandakumar" name="author">
+<meta content="Mo Zanaty" name="author">
+<meta content="Victor Vasiliev" name="author">
+<meta content="Ali Begen" name="author">
+<meta content="Zafer Gurel" name="author">
+<meta content="Gwendal Simon" name="author">
+<meta content="
+       This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport (MOQT).
+DTS enables relays to dynamically select which track to forward from a switching set—a
+collection of time-aligned tracks representing the same content at different quality levels,
+typically from a single source.
+The relay selects exactly one track per switching set at each group boundary based on
+available downstream bandwidth. Subscribers use the SWITCHING-SET-ASSIGNMENT parameter to
+group subscriptions into switching sets. When multiple switching sets are present,
+subscribers specify relative bandwidth allocation via Set throughput fraction, enabling
+the relay adaptation algorithm to allocate bandwidth across sets before selecting
+renditions within each set. 
+    " name="description">
+<meta content="xml2rfc 3.32.0" name="generator">
+<meta content="moqt" name="keyword">
+<meta content="dts" name="keyword">
+<meta content="draft-wilaw-moq-dts4moq-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.32.0
+    Python 3.12.12
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.2
+    platformdirs 4.9.4
+    pycountry 24.6.1
+    PyYAML 6.0.3
+    requests 2.32.5
+    wcwidth 0.6.0
+-->
+<link href="draft-wilaw-moq-dts4moq.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+    }
+  }
+  &.olPercent > dt {
+    float: none;
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+}
+dl:not(.dlNewline) > dt {
+  float: left;
+  margin-right: 2ch;
+  min-width: 8ch;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href].selfRef, .iref + a[href].internal {
+  color: var(--text-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+}
+@media not print {
+  :hover > a.pilcrow, a.pilcrow:focus {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* Comments */
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc nav {
+    font-family: var(--font-title);
+    font-weight: 360;
+    & > ul { margin-bottom: 2em; }
+    & ul {
+      margin: 0 0 0 4px;
+      & :is(p, li) {
+        margin: 2px 0;
+      }
+    }
+  }
+  #toc a.toplink {
+    float: right;
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+    &::before { /* css hamburger */
+      float: right;
+      position: relative;
+      width: 1em;
+      height: 1px;
+      left: -164px;
+      margin: 8px 0 0 0;
+      background: white none repeat scroll 0 0;
+      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+      content: "";
+    }
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active {
+    opacity: 1;
+    & nav { display: block; }
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:is(:link, :focus, :hover),
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin: 2px 0.5em 0;
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+  #toc a.toplink {
+    margin: 8px 0.5em 0;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([fill="white"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">Dynamic Track Switching for MOQT relays</td>
+<td class="right">March 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Law, et al.</td>
+<td class="center">Expires 29 September 2026</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Media Over QUIC</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-wilaw-moq-dts4moq-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-03-28" class="published">28 March 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2026-09-29">29 September 2026</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">W. Law</div>
+<div class="org">Akamai</div>
+</div>
+<div class="author">
+      <div class="author-name">I. Swett</div>
+<div class="org">Google</div>
+</div>
+<div class="author">
+      <div class="author-name">S. Nandakumar</div>
+<div class="org">Cisco</div>
+</div>
+<div class="author">
+      <div class="author-name">M. Zanaty</div>
+<div class="org">Cisco</div>
+</div>
+<div class="author">
+      <div class="author-name">V. Vasiliev</div>
+<div class="org">Google</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Begen</div>
+<div class="org">Ozyegin University</div>
+</div>
+<div class="author">
+      <div class="author-name">Z. Gurel</div>
+<div class="org">Ozyegin University</div>
+</div>
+<div class="author">
+      <div class="author-name">G. Simon</div>
+<div class="org">Synamedia</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">Dynamic Track Switching for MOQT relays</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport (MOQT).
+DTS enables relays to dynamically select which track to forward from a switching set—a
+collection of time-aligned tracks representing the same content at different quality levels,
+typically from a single source.
+The relay selects exactly one track per switching set at each group boundary based on
+available downstream bandwidth. Subscribers use the SWITCHING-SET-ASSIGNMENT parameter to
+group subscriptions into switching sets. When multiple switching sets are present,
+subscribers specify relative bandwidth allocation via Set throughput fraction, enabling
+the relay adaptation algorithm to allocate bandwidth across sets before selecting
+renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-about-this-document">
+<a href="#name-about-this-document" class="section-name selfRef">About This Document</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">
+        The latest revision of this draft can be found at <span><a href="https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html">https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html</a></span>.
+        Status information for this document may be found at <span><a href="https://datatracker.ietf.org/doc/draft-wilaw-moq-dts4moq/">https://datatracker.ietf.org/doc/draft-wilaw-moq-dts4moq/</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-note.1-3">
+        Discussion of this document takes place on the
+        Media Over QUIC Working Group mailing list (<span><a href="mailto:moq@ietf.org">mailto:moq@ietf.org</a></span>),
+        which is archived at <span><a href="https://mailarchive.ietf.org/arch/browse/moq/">https://mailarchive.ietf.org/arch/browse/moq/</a></span>.
+        Subscribe at <span><a href="https://www.ietf.org/mailman/listinfo/moq/">https://www.ietf.org/mailman/listinfo/moq/</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+<p id="section-note.1-4">Source for this draft and an issue tracker can be found at
+        <span><a href="https://github.com/wilaw/dts4moq">https://github.com/wilaw/dts4moq</a></span>.<a href="#section-note.1-4" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 29 September 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-requirements" class="internal xref">Requirements</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-mapping-to-moq-model" class="internal xref">Mapping to MoQ Model</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1" class="keepWithNext"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-content-requirements" class="internal xref">Content Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-original-publisher-requirem" class="internal xref">Original Publisher Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4">
+                <p id="section-toc.1-1.2.2.4.1"><a href="#section-2.4" class="auto internal xref">2.4</a>.  <a href="#name-end-subscriber-requirements" class="internal xref">End Subscriber Requirements</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.5">
+                <p id="section-toc.1-1.2.2.5.1"><a href="#section-2.5" class="auto internal xref">2.5</a>.  <a href="#name-relay-requirements" class="internal xref">Relay Requirements</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-switching-set-assignment-pa" class="internal xref">SWITCHING-SET-ASSIGNMENT Parameter</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-subscriber-setup-methods" class="internal xref">Subscriber Setup Methods</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-method-1-individual-subscri" class="internal xref">Method 1: Individual SUBSCRIBE</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-method-2-subscribe_namespac" class="internal xref">Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-dynamic-updates" class="internal xref">Dynamic Updates</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-relay-behavior" class="internal xref">Relay Behavior</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-processing-switching-sets" class="internal xref">Processing Switching Sets</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-bandwidth-allocation" class="internal xref">Bandwidth Allocation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-allocation-modes" class="internal xref">Allocation Modes</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.1">
+                    <p id="section-toc.1-1.5.2.3.2.1.1"><a href="#section-5.3.1" class="auto internal xref">5.3.1</a>.  <a href="#name-equal-allocation-default" class="internal xref">Equal Allocation (Default)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.2">
+                    <p id="section-toc.1-1.5.2.3.2.2.1"><a href="#section-5.3.2" class="auto internal xref">5.3.2</a>.  <a href="#name-set-rank-mode" class="internal xref">Set-Rank Mode</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-implementation-pseudocode" class="internal xref">Implementation Pseudocode</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-bandwidth-estimation" class="internal xref">Bandwidth Estimation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-examples" class="internal xref">Examples</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-example-2-track-abr" class="internal xref">Example: 2-Track ABR</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-example-2x2-grid-layout" class="internal xref">Example: 2x2 Grid Layout</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
+                <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-example-vr-headset-foveated" class="internal xref">Example: VR Headset / Foveated Rendering</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-example-live-sports-with-pr" class="internal xref">Example: Live Sports with Protected Main Camera</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-implementing-client-side-ab" class="internal xref">Implementing Client-Side ABR with DTS</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-requirements-for-adaptive-s" class="internal xref">Requirements for Adaptive Streaming</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-the-switch-approach" class="internal xref">The SWITCH Approach</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-addressing-requirements-wit" class="internal xref">Addressing Requirements with DTS</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
+                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-comparison" class="internal xref">Comparison</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-use-cases" class="internal xref">Use Cases</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1">
+                <p id="section-toc.1-1.12.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-use-cases-single-switching-" class="internal xref">Use Cases: Single Switching Set</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1.2.1">
+                    <p id="section-toc.1-1.12.2.1.2.1.1"><a href="#appendix-A.1.1" class="auto internal xref">A.1.1</a>.  <a href="#name-adaptive-bitrate-streaming-" class="internal xref">Adaptive Bitrate Streaming (ABR)</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2">
+                <p id="section-toc.1-1.12.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-use-cases-multiple-switchin" class="internal xref">Use Cases: Multiple Switching Sets</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2.2.1">
+                    <p id="section-toc.1-1.12.2.2.2.1.1"><a href="#appendix-A.2.1" class="auto internal xref">A.2.1</a>.  <a href="#name-video-conferencing-grid-lay" class="internal xref">Video Conferencing Grid Layout</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2.2.2">
+                    <p id="section-toc.1-1.12.2.2.2.2.1"><a href="#appendix-A.2.2" class="auto internal xref">A.2.2</a>.  <a href="#name-screen-sharing-with-video" class="internal xref">Screen Sharing with Video</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2.2.3">
+                    <p id="section-toc.1-1.12.2.2.2.3.1"><a href="#appendix-A.2.3" class="auto internal xref">A.2.3</a>.  <a href="#name-vr-ar-streaming" class="internal xref">VR/AR Streaming</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3">
+                <p id="section-toc.1-1.12.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-use-cases-switching-sets-wi" class="internal xref">Use Cases: Switching Sets with High-Priority Streams</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3.2.1">
+                    <p id="section-toc.1-1.12.2.3.2.1.1"><a href="#appendix-A.3.1" class="auto internal xref">A.3.1</a>.  <a href="#name-cloud-gaming" class="internal xref">Cloud Gaming</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3.2.2">
+                    <p id="section-toc.1-1.12.2.3.2.2.1"><a href="#appendix-A.3.2" class="auto internal xref">A.3.2</a>.  <a href="#name-live-sports-multi-view" class="internal xref">Live Sports Multi-View</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3.2.3">
+                    <p id="section-toc.1-1.12.2.3.2.3.1"><a href="#appendix-A.3.3" class="auto internal xref">A.3.3</a>.  <a href="#name-teleoperation-and-robotics" class="internal xref">Teleoperation and Robotics</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport <span>[<a href="#MOQT" class="cite xref">MOQT</a>]</span>.
+DTS enables relays to dynamically select which track to forward from a switching set based
+on available downstream bandwidth.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">DTS addresses a range of real-time media applications where bandwidth-adaptive delivery
+improves user experience. These include adaptive bitrate streaming for live video, video
+conferencing with multiple participants at varying quality levels, VR/AR streaming with
+gaze-based quality allocation, and hybrid scenarios combining adaptive streams with
+fixed-bandwidth overlays such as cloud gaming HUDs or sports statistics. These use cases
+(detailed in <a href="#usecase-appendix" class="auto internal xref">Appendix A</a>) drive the requirements for originla publishers, end subscribers,
+and relays specified in this document.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">A switching set is a collection of MoQ tracks representing the same content encoded at
+different quality levels (renditions), typically from a single source. Tracks within a switching set are time-aligned at
+group boundaries, allowing the relay to switch between renditions without causing decode
+errors. The relay selects exactly one track per switching set to forward at any given time.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">Subscribers can create switching sets through two methods:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-5.1">
+          <p id="section-1-5.1.1"><strong>Individual SUBSCRIBE</strong>: Subscriber sends SUBSCRIBE for each track with
+SWITCHING-SET-ASSIGNMENT parameter to group them into switching sets.<a href="#section-1-5.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-1-5.2">
+          <p id="section-1-5.2.1"><strong>SUBSCRIBE_NAMESPACE with TRACK_FILTER</strong>: Subscriber uses namespace subscription with
+a filter to select top-N tracks ranked by a specified property (e.g., VIEWCOUNT for
+selecting the most popular streams), and the relay applies DTS switching to each
+selected source.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-1-6">Both methods result in the same relay behavior: the relay processes one or more switching
+sets, allocates bandwidth based on Set throughput fraction, and selects the best rendition
+per set at each group boundary.<a href="#section-1-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="requirements">
+<section id="section-2">
+      <h2 id="name-requirements">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-requirements" class="section-name selfRef">Requirements</a>
+      </h2>
+<p id="section-2-1">This section describes the requirements that Dynamic Track Switching places on original
+publishers, end subscribers, and relays. These requirements are derived from the use cases
+described in <a href="#usecase-appendix" class="auto internal xref">Appendix A</a>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<div id="mapping-to-moq-model">
+<section id="section-2.1">
+        <h3 id="name-mapping-to-moq-model">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-mapping-to-moq-model" class="section-name selfRef">Mapping to MoQ Model</a>
+        </h3>
+<p id="section-2.1-1">A <strong>rendition</strong> is a single encoding of content at a specific quality level (e.g., 1080p at 5 Mbps).
+Each rendition corresponds to exactly one MoQ <strong>track</strong>.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">A <strong>switching set</strong> is a collection of one or more tracks that represent the same content encoded
+at different quality levels. All tracks within a switching set <span class="bcp14">MUST</span> be time-aligned at group
+boundaries to enable seamless switching. The relay selects exactly one track from the switching
+set to forward at any given time.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1-3">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Switching Set to MoQ Mapping                      │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│                        ┌──────────┐                                  │
+│                        │  Source  │                                  │
+│                        └────┬─────┘                                  │
+│                             │                                        │
+│              ┌──────────────┼──────────────┐                         │
+│              │              │              │                         │
+│              v              v              v                         │
+│         ┌────────┐    ┌────────┐    ┌────────┐                       │
+│         │ 1080p  │    │  720p  │    │  480p  │   (3 quality levels)  │
+│         │ 5 Mbps │    │ 2 Mbps │    │800 kbps│                       │
+│         └────────┘    └────────┘    └────────┘                       │
+│              │              │              │                         │
+│              v              v              v                         │
+│         ┌────────┐    ┌────────┐    ┌────────┐                       │
+│         │ Track 1│    │ Track 2│    │ Track 3│   (3 MoQ Tracks)      │
+│         └────────┘    └────────┘    └────────┘                       │
+│              │              │              │                         │
+│              └──────────────┼──────────────┘                         │
+│                             v                                        │
+│              ┌─────────────────────────────┐                         │
+│              │       Switching Set         │                         │
+│              │   (time-aligned at group    │                         │
+│              │        boundaries)          │                         │
+│              └─────────────────────────────┘                         │
+│                                                                      │
+│ Relay receives all tracks, forwards exactly ONE based on bandwidth   │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-2.1-3" class="pilcrow">¶</a>
+</div>
+<p id="section-2.1-4">For scenarios with multiple independent sources, each source has its own switching set.
+The relay manages bandwidth allocation across all switching sets while selecting one
+track per set.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1-5">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                      Multiple Switching Sets                         │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│ ┌─── Switching Set 1 ───┐  ┌─── Switching Set 2 ───┐                 │
+│ │       (Alice)         │  │        (Bob)          │                 │
+│ │                       │  │                       │                 │
+│ │ Track   Track   Track │  │ Track   Track   Track │                 │
+│ │ 1080p   720p    480p  │  │ 1080p   720p    480p  │    ...          │
+│ │                       │  │                       │                 │
+│ └───────────────────────┘  └───────────────────────┘                 │
+│          │                          │                                │
+│          v                          v                                │
+│    [Relay selects           [Relay selects                           │
+│     720p for Alice]          480p for Bob]                           │
+│                                                                      │
+│ Bandwidth allocated across sets based on Set throughput fraction     │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-2.1-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="content-requirements">
+<section id="section-2.2">
+        <h3 id="name-content-requirements">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-content-requirements" class="section-name selfRef">Content Requirements</a>
+        </h3>
+<p id="section-2.2-1">For tracks to participate in a dynamic switching set, they:<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.2-2.1">
+            <p id="section-2.2-2.1.1"><span class="bcp14">MUST</span> be time aligned at group boundaries. This enables the relay to switch
+between renditions at group boundaries without causing decode errors.<a href="#section-2.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.2">
+            <p id="section-2.2-2.2.1"><span class="bcp14">MUST</span> hold equivalent and independent versions of the same content, encoded
+at different bitrates. DTS is not a solution for switching between Scalable
+Video Coding (SVC) layers, which have dependencies between layers.<a href="#section-2.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.2-2.3">
+            <p id="section-2.2-2.3.1"><span class="bcp14">SHOULD</span> have consistent group durations across all renditions within a
+switching set to simplify relay timing decisions.<a href="#section-2.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="original-publisher-requirements">
+<section id="section-2.3">
+        <h3 id="name-original-publisher-requirem">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-original-publisher-requirem" class="section-name selfRef">Original Publisher Requirements</a>
+        </h3>
+<p id="section-2.3-1">Original publishers are responsible for producing and advertising media tracks that can be
+dynamically switched by relays.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.3-2.1">
+            <p id="section-2.3-2.1.1"><span class="bcp14">MUST</span> publish multiple time-aligned renditions of the same content at different quality levels
+(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>,
+<a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.2">
+            <p id="section-2.3-2.2.1"><span class="bcp14">MUST</span> ensure groups across renditions are temporally aligned to enable seamless switching at
+group boundaries (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.3-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.3">
+            <p id="section-2.3-2.3.1"><span class="bcp14">SHOULD</span> advertise throughput requirements for each rendition to enable bandwidth-based selection
+(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>,
+<a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.4">
+            <p id="section-2.3-2.4.1"><span class="bcp14">SHOULD</span> indicate which tracks belong to the same switching set or alternate group
+(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>)<a href="#section-2.3-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.5">
+            <p id="section-2.3-2.5.1"><span class="bcp14">SHOULD</span> indicate content type characteristics and relative priorities when publishing multiple
+content types (see <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.6">
+            <p id="section-2.3-2.6.1"><span class="bcp14">SHOULD</span> publish high-priority or fixed-bandwidth streams (such as HUD overlays, stats, or
+telemetry) as separate tracks with low publisher_priority values
+(see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.7">
+            <p id="section-2.3-2.7.1"><span class="bcp14">SHOULD</span> minimize encoding latency for latency-critical streams such as control cameras or
+interactive game video (see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.8">
+            <p id="section-2.3-2.8.1"><span class="bcp14">MUST</span> ensure all streams share a common time reference when temporal synchronization across
+multiple streams is required (see <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.8.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.3-2.9">
+            <p id="section-2.3-2.9.1"><span class="bcp14">SHOULD</span> indicate spatial relationships or layer hierarchy when applicable
+(see <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>)<a href="#section-2.3-2.9.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="end-subscriber-requirements">
+<section id="section-2.4">
+        <h3 id="name-end-subscriber-requirements">
+<a href="#section-2.4" class="section-number selfRef">2.4. </a><a href="#name-end-subscriber-requirements" class="section-name selfRef">End Subscriber Requirements</a>
+        </h3>
+<p id="section-2.4-1">End subscribers are responsible for establishing subscriptions and communicating switching
+preferences to relays.<a href="#section-2.4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-2.1">
+            <p id="section-2.4-2.1.1"><span class="bcp14">MUST</span> subscribe to all desired renditions within a switching set and indicate which subscriptions
+form a switching set for relay coordination (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.4-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.2">
+            <p id="section-2.4-2.2.1"><span class="bcp14">MUST</span> be prepared to decode any rendition within the switching set (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.4-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.3">
+            <p id="section-2.4-2.3.1"><span class="bcp14">MUST</span> subscribe to multiple switching sets simultaneously when receiving multiple independent
+streams (see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>,
+<a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.4">
+            <p id="section-2.4-2.4.1"><span class="bcp14">MUST</span> indicate relative bandwidth allocation via Set throughput fraction for each switching
+set to guide relay bandwidth allocation (see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>,
+<a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.5">
+            <p id="section-2.4-2.5.1"><span class="bcp14">SHOULD</span> use content type characteristics from the catalog to determine appropriate relative
+priorities or weights (see <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.6">
+            <p id="section-2.4-2.6.1"><span class="bcp14">MAY</span> dynamically adjust priorities based on changing conditions such as active speaker changes,
+gaze direction updates, or user interaction
+(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.4-2.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.7">
+            <p id="section-2.4-2.7.1"><span class="bcp14">SHOULD</span> specify total bandwidth budget or constraints when applicable (see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>)<a href="#section-2.4-2.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.8">
+            <p id="section-2.4-2.8.1"><span class="bcp14">MAY</span> specify minimum acceptable quality thresholds for critical content
+(see <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.4-2.8.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-2.9">
+            <p id="section-2.4-2.9.1"><span class="bcp14">SHOULD</span> specify latency requirements for latency-critical streams
+(see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.9.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="relay-requirements">
+<section id="section-2.5">
+        <h3 id="name-relay-requirements">
+<a href="#section-2.5" class="section-number selfRef">2.5. </a><a href="#name-relay-requirements" class="section-name selfRef">Relay Requirements</a>
+        </h3>
+<p id="section-2.5-1">Relays are responsible for making dynamic track selection decisions and forwarding the
+appropriate groups to downstream subscribers. Relays do not have access to the catalog;
+switching metadata is obtained from track properties in publish messages and from
+subscribe parameters in subscribe or subscribe namespace messages.<a href="#section-2.5-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.5-2.1">
+            <p id="section-2.5-2.1.1"><span class="bcp14">MUST</span> track available bandwidth to each downstream subscriber (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.5-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.2">
+            <p id="section-2.5-2.2.1"><span class="bcp14">MUST</span> select exactly one rendition per switching set to forward at any given time
+(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>,
+<a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.3">
+            <p id="section-2.5-2.3.1"><span class="bcp14">MUST</span> switch renditions at group boundaries to maintain decodability
+(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>,
+<a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.4">
+            <p id="section-2.5-2.4.1"><span class="bcp14">MUST</span> allocate forwarding capacity across multiple switching sets simultaneously when serving
+subscribers with multiple concurrent streams
+(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>,
+<a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.5">
+            <p id="section-2.5-2.5.1"><span class="bcp14">MUST</span> respect Set throughput fraction values when allocating bandwidth to switching sets
+(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.5-2.5.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.6">
+            <p id="section-2.5-2.6.1"><span class="bcp14">SHOULD</span> select appropriate quality levels within each set's allocated bandwidth
+(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>)<a href="#section-2.5-2.6.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.7">
+            <p id="section-2.5-2.7.1"><span class="bcp14">MUST</span> respond rapidly to Set throughput fraction updates from subscribers
+(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.5-2.7.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.8">
+            <p id="section-2.5-2.8.1"><span class="bcp14">MUST</span> prioritize forwarding groups for high-priority streams before performing adaptive
+allocation for other streams (see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.8.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.9">
+            <p id="section-2.5-2.9.1"><span class="bcp14">MUST</span> prioritize latency for latency-critical streams such as control cameras or interactive
+game video (see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.9.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.10">
+            <p id="section-2.5-2.10.1"><span class="bcp14">MUST</span> maintain temporal synchronization when forwarding multiple related streams
+(see <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.10.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.5-2.11">
+            <p id="section-2.5-2.11.1"><span class="bcp14">SHOULD</span> minimize switching latency when bandwidth conditions change (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.5-2.11.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="switching-set-assignment">
+<section id="section-3">
+      <h2 id="name-switching-set-assignment-pa">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-switching-set-assignment-pa" class="section-name selfRef">SWITCHING-SET-ASSIGNMENT Parameter</a>
+      </h2>
+<p id="section-3-1">The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) <span class="bcp14">MAY</span> appear in a SUBSCRIBE,
+REQUEST_UPDATE, or PUBLISH_OK message. This parameter assigns a subscription to a DTS
+switching set and specifies bandwidth allocation.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-3-2">
+<pre>
+SWITCHING-SET-ASSIGNMENT {
+  Switching set ID (vi64),
+  Throughput threshold (vi64),
+  Set throughput fraction (vi64),
+  Activate switching (1),
+  [Set rank (8)]
+}
+</pre><a href="#section-3-2" class="pilcrow">¶</a>
+</div>
+<ul class="normal">
+<li class="normal" id="section-3-3.1">
+          <p id="section-3-3.1.1"><strong>Switching set ID</strong>: Integer identifying the switching set. A track <span class="bcp14">MUST</span> only be assigned
+to one switching set at a time.<a href="#section-3-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-3.2">
+          <p id="section-3-3.2.1"><strong>Throughput threshold</strong>: Minimum throughput (kbps) required to select this track.<a href="#section-3-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-3.3">
+          <p id="section-3-3.3.1"><strong>Set throughput fraction</strong>: The fraction of connection throughput allocated to this switching
+set, expressed as an integer 1 &lt;= N &lt;= 10. The set receives N/10 of estimated bandwidth.<a href="#section-3-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-3.4">
+          <p id="section-3-3.4.1"><strong>Activate switching</strong>: 0 if more subscriptions will be added to the set, or 1 if the
+relay should activate switching immediately.<a href="#section-3-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-3-3.5">
+          <p id="section-3-3.5.1"><strong>Set rank</strong> (optional): Relative rank for bandwidth allocation across sets, expressed as
+an 8-bit unsigned integer (1-255). Default is 1. Values outside this range <span class="bcp14">MUST</span> result in
+a protocol error. When all sets have the same rank (default), bandwidth is allocated
+proportionally. When sets have different ranks, lower values receive higher priority
+during allocation.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="subscriber-setup">
+<section id="section-4">
+      <h2 id="name-subscriber-setup-methods">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-subscriber-setup-methods" class="section-name selfRef">Subscriber Setup Methods</a>
+      </h2>
+<p id="section-4-1">Subscribers can create switching sets through two methods. Both result in identical
+relay behavior.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<div id="method-subscribe">
+<section id="section-4.1">
+        <h3 id="name-method-1-individual-subscri">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-method-1-individual-subscri" class="section-name selfRef">Method 1: Individual SUBSCRIBE</a>
+        </h3>
+<p id="section-4.1-1">This method is used when the subscriber knows in advance which tracks to subscribe to
+and wants explicit control over switching set membership. The subscriber sends a separate
+SUBSCRIBE message for each track, including the SWITCHING-SET-ASSIGNMENT parameter to
+assign the track to a switching set.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">Tracks are grouped into a switching set by specifying the same Switching set ID. The
+subscriber sets activate=0 for all tracks except the last one in each set, then sets
+activate=1 on the final track to signal that the set is complete and the relay should
+begin active track selection.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">The Set throughput fraction indicates what portion of total bandwidth this switching set
+should receive. The fraction values across all sets should sum to 10 (representing 100%
+of available bandwidth), though the relay will normalize if they do not.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">This example shows a subscriber creating two switching sets for a live sports broadcast:
+main camera (set 1) and sideline camera (set 2), each with two quality renditions.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-5">
+<pre>
+Subscriber                              Relay
+  |                                       |
+  |  // Switching Set 1: Main Camera      |
+  |                                       |
+  |  SUBSCRIBE track=main/1080p           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=3000,           |
+  |      fraction=6, activate=0}          |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  SUBSCRIBE track=main/480p            |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=800,            |
+  |      fraction=6, activate=1}          |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  (Relay activates DTS for set 1)      |
+  |                                       |
+  |  // Switching Set 2: Sideline Camera  |
+  |                                       |
+  |  SUBSCRIBE track=sideline/720p        |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=1500,           |
+  |      fraction=4, activate=0}          |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  SUBSCRIBE track=sideline/360p        |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=400,            |
+  |      fraction=4, activate=1}          |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  (Relay activates DTS for set 2)      |
+  |                                       |
+  |  Result: Two switching sets           |
+  |    Set 1 (main):     60% bandwidth    |
+  |    Set 2 (sideline): 40% bandwidth    |
+  |                                       |
+</pre><a href="#section-4.1-5" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-6"><strong>Modifying the switching set</strong>:<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-7.1">
+            <p id="section-4.1-7.1.1"><strong>Add track</strong>: Send SUBSCRIBE with SWITCHING-SET-ASSIGNMENT pointing to existing set<a href="#section-4.1-7.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-7.2">
+            <p id="section-4.1-7.2.1"><strong>Remove track</strong>: Unsubscribe from that track<a href="#section-4.1-7.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-7.3">
+            <p id="section-4.1-7.3.1"><strong>Disable DTS</strong>: Send REQUEST_UPDATE with activate=0<a href="#section-4.1-7.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-7.4">
+            <p id="section-4.1-7.4.1"><strong>Resume DTS</strong>: Send REQUEST_UPDATE with activate=1<a href="#section-4.1-7.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="method-trackfilter">
+<section id="section-4.2">
+        <h3 id="name-method-2-subscribe_namespac">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-method-2-subscribe_namespac" class="section-name selfRef">Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER</a>
+        </h3>
+<p id="section-4.2-1">This method is used when the subscriber wants to receive tracks from multiple sources
+within a namespace but does not know in advance which specific sources to subscribe to.
+Instead, the subscriber specifies selection criteria via TRACK_FILTER, and the relay
+dynamically selects sources based on the specified property.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The relay monitors all tracks within the namespace and selects the top-N sources ranked
+by the specified property (e.g., LOUDNESS for voice activity detection, VIEWCOUNT for
+popularity). For each selected source, the relay creates a switching set containing all
+quality renditions from that source.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">When the relay selects a source, it sends a PUBLISH message to the subscriber. The
+subscriber responds with PUBLISH_OK containing SWITCHING-SET-ASSIGNMENT to specify the
+bandwidth allocation for that source's switching set. This allows the subscriber to
+assign different fractions to different sources based on application-level priority.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">The selection is dynamic: as property values change, sources may be added or removed
+from the top-N set. These changes <span class="bcp14">MAY</span> occur at any time, not only at group boundaries.
+When the selection changes:<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2-5">
+<li id="section-4.2-5.1">
+            <p id="section-4.2-5.1.1">For a newly selected source: Relay sends PUBLISH, subscriber responds with
+PUBLISH_OK + SWITCHING-SET-ASSIGNMENT<a href="#section-4.2-5.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-4.2-5.2">
+            <p id="section-4.2-5.2.1">For a deselected source: Relay sends REQUEST_UPDATE with fwd=0<a href="#section-4.2-5.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<p id="section-4.2-6">The subscriber is responsible for reaching a decodable state when selection changes,
+either via new group request or relay cache.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2-7">
+<pre>
+TRACK_FILTER {
+  Property Type (vi64),       // e.g., LOUDNESS for voice activity
+  MaxTracksSelected (vi64),   // Number of sources to select
+  Timeout (vi64),
+  [Default Set rank (8)]      // Optional: default rank for created sets (default=1)
+}
+</pre><a href="#section-4.2-7" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-4.2-8">
+<pre>
+Subscriber                              Relay
+  |                                       |
+  |  SUBSCRIBE_NAMESPACE (conf, video)    |
+  |    TRACK_FILTER{LOUDNESS, max=4}      |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  (Relay selects top 4 by LOUDNESS:    |
+  |   alice, bob, carol, dave)            |
+  |                                       |
+  |  PUBLISH (alice, *)                   |
+  |&lt;--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=2000,           |
+  |      fraction=4, activate=0}          |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  PUBLISH (bob, *)                     |
+  |&lt;--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=2000,           |
+  |      fraction=2, activate=0}          |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  ... (carol, dave similarly)          |
+  |                                       |
+  |  (Relay creates 4 switching sets      |
+  |   with subscriber-assigned fractions) |
+  |                                       |
+</pre><a href="#section-4.2-8" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2-9">The subscriber assigns fraction values in PUBLISH_OK to control bandwidth allocation.
+Active speaker (alice) gets fraction=4 (40%), others get fraction=2 (20% each).<a href="#section-4.2-9" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="dynamic-updates">
+<section id="section-4.3">
+        <h3 id="name-dynamic-updates">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-dynamic-updates" class="section-name selfRef">Dynamic Updates</a>
+        </h3>
+<p id="section-4.3-1">Subscribers can update switching set parameters at any time via REQUEST_UPDATE:<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.3-2">
+<pre>
+// Change active speaker from alice to bob
+REQUEST_UPDATE (alice subscription)
+  SWITCHING-SET-ASSIGNMENT{id=1, fraction=2}  // demote alice
+
+REQUEST_UPDATE (bob subscription)
+  SWITCHING-SET-ASSIGNMENT{id=2, fraction=4}  // promote bob
+</pre><a href="#section-4.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="relay-behavior">
+<section id="section-5">
+      <h2 id="name-relay-behavior">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-relay-behavior" class="section-name selfRef">Relay Behavior</a>
+      </h2>
+<p id="section-5-1">This section defines the unified relay behavior for Dynamic Track Switching. The relay
+processes switching sets identically regardless of how they were created (individual
+SUBSCRIBE or SUBSCRIBE_NAMESPACE).<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="processing-switching-sets">
+<section id="section-5.1">
+        <h3 id="name-processing-switching-sets">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-processing-switching-sets" class="section-name selfRef">Processing Switching Sets</a>
+        </h3>
+<p id="section-5.1-1">The relay maintains state for each switching set:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.1-2.1">
+            <p id="section-5.1-2.1.1">Set of subscriptions belonging to the switching set<a href="#section-5.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.2">
+            <p id="section-5.1-2.2.1">Set throughput fraction (N/10 of connection bandwidth)<a href="#section-5.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.3">
+            <p id="section-5.1-2.3.1">Activation state (active or pending)<a href="#section-5.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.4">
+            <p id="section-5.1-2.4.1">Currently selected track (Forward state = 1)<a href="#section-5.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.1-3">When the relay receives a subscription with SWITCHING-SET-ASSIGNMENT:<a href="#section-5.1-3" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.1-4">
+<li id="section-5.1-4.1">
+            <p id="section-5.1-4.1.1">Add subscription to the specified switching set (create set if needed)<a href="#section-5.1-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-4.2">
+            <p id="section-5.1-4.2.1">Set Forward state to 0 for the new subscription<a href="#section-5.1-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-4.3">
+            <p id="section-5.1-4.3.1">Store the Set throughput fraction as a property of the set<a href="#section-5.1-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.1-4.4">
+            <p id="section-5.1-4.4.1">If Activate switching = 1, begin active track selection<a href="#section-5.1-4.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="bandwidth-allocation">
+<section id="section-5.2">
+        <h3 id="name-bandwidth-allocation">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-bandwidth-allocation" class="section-name selfRef">Bandwidth Allocation</a>
+        </h3>
+<p id="section-5.2-1">On a periodic bandwidth estimate update or other selection trigger (e.g., new group
+boundary), the relay:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2-2">
+<li id="section-5.2-2.1">
+            <p id="section-5.2-2.1.1"><strong>Measures B_total</strong>: Estimate downstream bandwidth capacity<a href="#section-5.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-2.2">
+            <p id="section-5.2-2.2.1"><strong>Allocates per set</strong>: For each switching set with fraction N:<a href="#section-5.2-2.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.2-2.2.2.1">
+                <p id="section-5.2-2.2.2.1.1">B_set = B_total × N / 10<a href="#section-5.2-2.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            </ul>
+</li>
+          <li id="section-5.2-2.3">
+            <p id="section-5.2-2.3.1"><strong>Selects rendition</strong>: Within each set, select the highest-quality rendition
+with throughput threshold &lt;= B_set<a href="#section-5.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-5.2-2.4">
+            <p id="section-5.2-2.4.1"><strong>Forwards groups</strong>: Set Forward state = 1 for selected track, 0 for others<a href="#section-5.2-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+<div class="alignLeft art-text artwork" id="section-5.2-3">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                     Relay Adaptation Algorithm                       │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│                    +---------------------------+                     │
+│                    | 1. Measure B_total        |                     │
+│                    +-------------+-------------+                     │
+│                                  |                                   │
+│                                  v                                   │
+│                    +---------------------------+                     │
+│                    | 2. For each switching set |                     │
+│                    |    B_set = B_total × N/10 |                     │
+│                    +-------------+-------------+                     │
+│                                  |                                   │
+│                                  v                                   │
+│                    +---------------------------+                     │
+│                    | 3. Select best rendition  |                     │
+│                    |    where throughput&lt;=B_set|                     │
+│                    +-------------+-------------+                     │
+│                                  |                                   │
+│                                  v                                   │
+│                    +---------------------------+                     │
+│                    | 4. Forward selected groups|                     │
+│                    +---------------------------+                     │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-5.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="allocation-modes">
+<section id="section-5.3">
+        <h3 id="name-allocation-modes">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-allocation-modes" class="section-name selfRef">Allocation Modes</a>
+        </h3>
+<p id="section-5.3-1">Bandwidth allocation across multiple switching sets is determined by the Set rank parameter:<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<div id="equal-allocation-default">
+<section id="section-5.3.1">
+          <h4 id="name-equal-allocation-default">
+<a href="#section-5.3.1" class="section-number selfRef">5.3.1. </a><a href="#name-equal-allocation-default" class="section-name selfRef">Equal Allocation (Default)</a>
+          </h4>
+<p id="section-5.3.1-1">When all sets have the same rank (default rank=1), each set receives bandwidth proportional
+to its fraction:<a href="#section-5.3.1-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.3.1-2">
+<pre>
+B_set_i = B_total × fraction_i / 10
+</pre><a href="#section-5.3.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-5.3.1-3">All sets degrade proportionally when bandwidth is constrained.<a href="#section-5.3.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="set-rank-mode">
+<section id="section-5.3.2">
+          <h4 id="name-set-rank-mode">
+<a href="#section-5.3.2" class="section-number selfRef">5.3.2. </a><a href="#name-set-rank-mode" class="section-name selfRef">Set-Rank Mode</a>
+          </h4>
+<p id="section-5.3.2-1">When sets have different rank values, sets are processed in rank order (lower value =
+higher priority). Each set selects the best rendition that fits within the remaining
+bandwidth before moving to the next set. This ensures higher-ranked sets receive their
+optimal rendition before lower-ranked sets consume bandwidth.<a href="#section-5.3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="implementation-pseudocode">
+<section id="section-5.4">
+        <h3 id="name-implementation-pseudocode">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-implementation-pseudocode" class="section-name selfRef">Implementation Pseudocode</a>
+        </h3>
+<div class="alignLeft art-text artwork" id="section-5.4-1">
+<pre>
+function select_renditions(B_total, sets[]):
+
+  if all sets have same rank:  // Equal allocation
+    for each set in sets:
+      B_set = B_total * set.fraction / 10
+      set.selected = first rendition where throughput &lt;= B_set
+
+  else:  // Set-Rank mode
+    remaining = B_total
+    sort sets by rank (ascending)
+    for each set in sets:
+      // Select best rendition that fits in remaining bandwidth
+      set.selected = NONE
+      for each rendition in set.renditions (highest to lowest quality):
+        if rendition.throughput &lt;= remaining:
+          set.selected = rendition
+          remaining -= rendition.throughput
+          break
+
+  return sets[].selected
+</pre><a href="#section-5.4-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="bandwidth-estimation">
+<section id="section-5.5">
+        <h3 id="name-bandwidth-estimation">
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-bandwidth-estimation" class="section-name selfRef">Bandwidth Estimation</a>
+        </h3>
+<p id="section-5.5-1">The relay <span class="bcp14">MUST</span> maintain a bandwidth estimate (B_total) for each downstream subscriber.
+This estimate is obtained periodically from the QUIC stack (e.g., congestion window,
+pacing rate, smoothed RTT) and <span class="bcp14">MAY</span> be supplemented by external sources such as SCONE
+<span>[<a href="#I-D.ietf-scone-protocol" class="cite xref">I-D.ietf-scone-protocol</a>]</span> or application-level feedback. The estimate drives rendition
+selection decisions for all switching sets associated with that subscriber<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="examples">
+<section id="section-6">
+      <h2 id="name-examples">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-examples" class="section-name selfRef">Examples</a>
+      </h2>
+<p id="section-6-1">This section provides focused examples demonstrating relay behavior in common
+scenarios. Each example references a detailed use case in <a href="#usecase-appendix" class="auto internal xref">Appendix A</a>
+that includes architecture diagrams and extended requirements.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="example-2-track-abr">
+<section id="section-6.1">
+        <h3 id="name-example-2-track-abr">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-example-2-track-abr" class="section-name selfRef">Example: 2-Track ABR</a>
+        </h3>
+<p id="section-6.1-1">This example demonstrates the simplest DTS scenario: a single switching set with two
+quality renditions from one source. See <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a> for the full use case
+description and architecture.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2"><strong>Setup</strong>: Video at 1080p (2000 kbps) and 480p (500 kbps), fraction=10<a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<p id="section-6.1-3">The subscriber creates a single switching set by sending two SUBSCRIBE messages with
+the same set ID. The first subscription (1080p) sets activate=0 to indicate more tracks
+will follow. The second subscription (480p) sets activate=1 to signal the set is complete.
+Since this is the only switching set, fraction=10 allocates 100% of bandwidth to it.<a href="#section-6.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.1-4">
+<pre>
+Subscriber subscribes to both tracks:
+  SUBSCRIBE (video, 1080p) SWITCHING-SET-ASSIGNMENT{id=1, throughput=2000, fraction=10}
+  SUBSCRIBE (video, 480p)  SWITCHING-SET-ASSIGNMENT{id=1, throughput=500, activate=1}
+</pre><a href="#section-6.1-4" class="pilcrow">¶</a>
+</div>
+<p id="section-6.1-5">Once the relay receives the second subscription with activate=1, it begins active track
+selection. The relay evaluates the bandwidth estimate and selects the highest-quality
+rendition whose throughput threshold fits within the allocated bandwidth.<a href="#section-6.1-5" class="pilcrow">¶</a></p>
+<p id="section-6.1-6">When bandwidth is 3 Mbps, the relay calculates B_set = 3000 kbps. The 1080p track
+requires 2000 kbps, which fits, so the relay selects 1080p and sets Forward=1 for that
+track. The 480p track gets Forward=0.<a href="#section-6.1-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.1-7">
+<pre>
+Relay behavior at 3 Mbps:
+  B_set = 3000 × 10/10 = 3000 kbps
+  Select: 2000 &lt;= 3000 → 1080p
+  Forward: 1080p groups
+</pre><a href="#section-6.1-7" class="pilcrow">¶</a>
+</div>
+<p id="section-6.1-8">If bandwidth drops to 1 Mbps, the relay recalculates B_set = 1000 kbps. The 1080p track
+(2000 kbps) no longer fits, so the relay switches to 480p (500 kbps). At the next group
+boundary, Forward state changes: 1080p gets Forward=0, 480p gets Forward=1.<a href="#section-6.1-8" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.1-9">
+<pre>
+Relay behavior at 1 Mbps:
+  B_set = 1000 × 10/10 = 1000 kbps
+  Select: 2000 &gt; 1000, 500 &lt;= 1000 → 480p
+  Forward: 480p groups
+</pre><a href="#section-6.1-9" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-6.1-10">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                      2-Track ABR Example                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Bandwidth = 3 Mbps           Bandwidth = 1 Mbps                    │
+│                                                                      │
+│   ┌────────┐  ┌────────┐       ┌────────┐  ┌────────┐                │
+│   │ 1080p  │  │  480p  │       │ 1080p  │  │  480p  │                │
+│   │ 2 Mbps │  │ 500kbps│       │ 2 Mbps │  │ 500kbps│                │
+│   └───┬────┘  └────────┘       └────────┘  └───┬────┘                │
+│       │                                        │                     │
+│  [SELECTED]                               [SELECTED]                 │
+│       │                                        │                     │
+│       v                                        v                     │
+│   Forward                                  Forward                   │
+│   1080p                                    480p                      │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-6.1-10" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-2x2-grid-layout">
+<section id="section-6.2">
+        <h3 id="name-example-2x2-grid-layout">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-example-2x2-grid-layout" class="section-name selfRef">Example: 2x2 Grid Layout</a>
+        </h3>
+<p id="section-6.2-1">This example demonstrates multiple switching sets with equal bandwidth allocation. Four
+participants are displayed in a grid layout, each receiving the same share of bandwidth.
+See <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a> for the full use case description including active speaker
+priority handling.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2"><strong>Setup</strong>: Each participant has 720p (800 kbps) and 360p (300 kbps), equal fractions<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+<p id="section-6.2-3">The subscriber uses SUBSCRIBE_NAMESPACE with TRACK_FILTER to request the top 4 participants.
+The relay selects sources and sends PUBLISH for each. The subscriber responds with PUBLISH_OK
+containing SWITCHING-SET-ASSIGNMENT with fraction=2 for each, allocating 20% of bandwidth
+per participant. The remaining 20% provides headroom for audio and protocol overhead.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-4">
+<pre>
+Subscriber                              Relay
+  |                                       |
+  |  SUBSCRIBE_NAMESPACE (conf, video)    |
+  |    TRACK_FILTER{LOUDNESS, max=4}      |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  PUBLISH (alice, *)                   |
+  |&lt;--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, fraction=2}                |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  PUBLISH (bob, *)                     |
+  |&lt;--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, fraction=2}                |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  ... (carol id=3, dave id=4 similarly)|
+  |                                       |
+</pre><a href="#section-6.2-4" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-5">With equal fractions and equal rank (default), the relay uses equal allocation mode. All
+participants receive the same quality level, and when bandwidth drops, all degrade together.<a href="#section-6.2-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.2-6">
+<pre>
+At 4 Mbps total:
+  B_set = 4000 × 2/10 = 800 kbps per set
+  All sets: 800 &lt;= 800 → select 720p
+  Forward: alice@720p, bob@720p, carol@720p, dave@720p
+
+At 2 Mbps total:
+  B_set = 2000 × 2/10 = 400 kbps per set
+  All sets: 800 &gt; 400, 300 &lt;= 400 → select 360p
+  Forward: alice@360p, bob@360p, carol@360p, dave@360p
+</pre><a href="#section-6.2-6" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-6.2-7">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                      2x2 Grid Layout                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  4 Mbps: All participants at 720p                                    │
+│                                                                      │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Alice (720p)   │  │   Bob (720p)    │                            │
+│  │  fraction=2     │  │  fraction=2     │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Carol (720p)   │  │  Dave (720p)    │                            │
+│  │  fraction=2     │  │  fraction=2     │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│                                                                      │
+│  2 Mbps: All participants degrade equally to 360p                    │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-6.2-7" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-vr-headset-foveated-rendering">
+<section id="section-6.3">
+        <h3 id="name-example-vr-headset-foveated">
+<a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-example-vr-headset-foveated" class="section-name selfRef">Example: VR Headset / Foveated Rendering</a>
+        </h3>
+<p id="section-6.3-1">This example demonstrates dynamic bandwidth reallocation based on user interaction. In
+foveated rendering, the tile where the user is looking (gaze tile) receives higher quality
+than peripheral tiles. As the user's gaze moves, bandwidth allocation shifts in real-time.
+See <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a> for the full use case description including multi-layer VR environments.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2"><strong>Setup</strong>: 5 tiles, each with hi (1 Mbps) and lo (200 kbps). Gaze tile gets fraction=4,
+peripheral tiles get fraction=1 each.<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<p id="section-6.3-3">The subscriber uses individual SUBSCRIBE messages since the tile layout is known in advance.
+Each tile becomes a separate switching set with two renditions (hi and lo). The gaze tile
+initially receives fraction=4 (40% of bandwidth), while each peripheral tile receives
+fraction=1 (10% each), leaving 20% headroom.<a href="#section-6.3-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.3-4">
+<pre>
+Subscriber                              Relay
+  |                                       |
+  |  // Subscribe to all 5 tiles          |
+  |  SUBSCRIBE (tile1, hi)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=1000, fraction=1}|
+  |--------------------------------------&gt;|
+  |  SUBSCRIBE (tile1, lo)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=200, activate=1}|
+  |--------------------------------------&gt;|
+  |                                       |
+  |  ... (tiles 2, 4, 5 similarly, f=1)   |
+  |                                       |
+  |  // Tile 3 is gaze tile, gets f=4    |
+  |  SUBSCRIBE (tile3, hi)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=3, throughput=1000, fraction=4}|
+  |--------------------------------------&gt;|
+  |  SUBSCRIBE (tile3, lo)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=3, throughput=200, activate=1}|
+  |--------------------------------------&gt;|
+  |                                       |
+</pre><a href="#section-6.3-4" class="pilcrow">¶</a>
+</div>
+<p id="section-6.3-5">At 3 Mbps, the relay allocates bandwidth based on fractions. The gaze tile (fraction=4)
+gets 1200 kbps and selects hi quality. Peripheral tiles (fraction=1) get 300 kbps each
+and select lo quality.<a href="#section-6.3-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.3-6">
+<pre>
+At 3 Mbps total:
+  Gaze tile (fraction=4):    B = 3000 × 4/10 = 1200 kbps → hi (1 Mbps)
+  Peripheral (fraction=1):   B = 3000 × 1/10 = 300 kbps  → lo (200 kbps)
+</pre><a href="#section-6.3-6" class="pilcrow">¶</a>
+</div>
+<p id="section-6.3-7">When the user's gaze shifts from tile 3 to tile 5, the subscriber sends REQUEST_UPDATE
+messages to swap the fractions. The relay immediately reallocates bandwidth, promoting
+tile 5 to hi quality and demoting tile 3 to lo quality.<a href="#section-6.3-7" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.3-8">
+<pre>
+When gaze shifts from tile 3 to tile 5:
+  REQUEST_UPDATE (tile 3) fraction=1  // demote
+  REQUEST_UPDATE (tile 5) fraction=4  // promote
+
+Relay immediately reallocates:
+  Tile 5: 1200 kbps → hi
+  Tile 3: 300 kbps → lo
+</pre><a href="#section-6.3-8" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-6.3-9">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                    VR Foveated Rendering                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  360° View with Gaze at Tile 3:                                      │
+│                                                                      │
+│  ┌──────┐ ┌──────┐ ┌──────────┐ ┌──────┐ ┌──────┐                    │
+│  │Tile 1│ │Tile 2│ │  Tile 3  │ │Tile 4│ │Tile 5│                    │
+│  │  lo  │ │  lo  │ │   hi     │ │  lo  │ │  lo  │                    │
+│  │ f=1  │ │ f=1  │ │  f=4     │ │ f=1  │ │ f=1  │                    │
+│  └──────┘ └──────┘ └──────────┘ └──────┘ └──────┘                    │
+│                      [GAZE]                                          │
+│                                                                      │
+│  Gaze shifts to Tile 5 → REQUEST_UPDATE to swap fractions            │
+│                                                                      │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────────┐                    │
+│  │Tile 1│ │Tile 2│ │Tile 3│ │Tile 4│ │  Tile 5  │                    │
+│  │  lo  │ │  lo  │ │  lo  │ │  lo  │ │   hi     │                    │
+│  │ f=1  │ │ f=1  │ │ f=1  │ │ f=1  │ │  f=4     │                    │
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────────┘                    │
+│                                         [GAZE]                       │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-6.3-9" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-live-sports-with-protected-main-camera">
+<section id="section-6.4">
+        <h3 id="name-example-live-sports-with-pr">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-example-live-sports-with-pr" class="section-name selfRef">Example: Live Sports with Protected Main Camera</a>
+        </h3>
+<p id="section-6.4-1">This example demonstrates Set-Rank mode where one stream is protected during bandwidth
+degradation. A live sports broadcast has a main camera that must maintain quality, while
+a secondary replay camera can degrade if bandwidth is constrained.<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<p id="section-6.4-2"><strong>Setup</strong>: Main camera with 1080p (3 Mbps) and 480p (800 kbps), rank=1. Replay camera
+with 720p (1.5 Mbps) and 360p (400 kbps), rank=2.<a href="#section-6.4-2" class="pilcrow">¶</a></p>
+<p id="section-6.4-3">The subscriber uses individual SUBSCRIBE to create two switching sets with different
+ranks. The main camera (rank=1) has higher priority than the replay camera (rank=2).
+When bandwidth is sufficient, both receive their best quality. When bandwidth drops,
+the relay protects the main camera by degrading the replay camera first.<a href="#section-6.4-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.4-4">
+<pre>
+Subscriber                              Relay
+  |                                       |
+  |  // Main camera - protected (rank=1)  |
+  |  SUBSCRIBE (main, 1080p)              |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=3000,           |
+  |      fraction=6, rank=1}              |
+  |--------------------------------------&gt;|
+  |  SUBSCRIBE (main, 480p)               |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=800,            |
+  |      fraction=6, rank=1, activate=1}  |
+  |--------------------------------------&gt;|
+  |                                       |
+  |  // Replay camera - best effort (rank=2)|
+  |  SUBSCRIBE (replay, 720p)             |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=1500,           |
+  |      fraction=4, rank=2}              |
+  |--------------------------------------&gt;|
+  |  SUBSCRIBE (replay, 360p)             |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=400,            |
+  |      fraction=4, rank=2, activate=1}  |
+  |--------------------------------------&gt;|
+  |                                       |
+</pre><a href="#section-6.4-4" class="pilcrow">¶</a>
+</div>
+<p id="section-6.4-5">Because the sets have different ranks, the relay uses Set-Rank mode instead of equal
+allocation. It processes sets in rank order, giving higher-ranked sets their optimal
+rendition before allocating remaining bandwidth to lower-ranked sets.<a href="#section-6.4-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.4-6">
+<pre>
+At 5 Mbps (sufficient bandwidth):
+  Process rank=1 (main): 3000 &lt;= 5000 → select 1080p, remaining = 2000
+  Process rank=2 (replay): 1500 &lt;= 2000 → select 720p
+  Forward: main@1080p, replay@720p
+
+At 3.5 Mbps (constrained):
+  Process rank=1 (main): 3000 &lt;= 3500 → select 1080p, remaining = 500
+  Process rank=2 (replay): 1500 &gt; 500, 400 &lt;= 500 → select 360p
+  Forward: main@1080p, replay@360p  (main protected, replay degraded)
+
+At 2 Mbps (severely constrained):
+  Process rank=1 (main): 3000 &gt; 2000, 800 &lt;= 2000 → select 480p, remaining = 1200
+  Process rank=2 (replay): 1500 &gt; 1200, 400 &lt;= 1200 → select 360p
+  Forward: main@480p, replay@360p  (both degraded, but main got priority)
+</pre><a href="#section-6.4-6" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-6.4-7">
+<pre>
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Set-Rank Mode: Protected Stream                   │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  5 Mbps: Both streams at best quality                                │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Main (1080p)   │  │  Replay (720p)  │                            │
+│  │  rank=1         │  │  rank=2         │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│                                                                      │
+│  3.5 Mbps: Main protected, replay degrades first                     │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Main (1080p)   │  │  Replay (360p)  │                            │
+│  │  [PROTECTED]    │  │  [DEGRADED]     │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-6.4-7" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="client-side-abr">
+<section id="section-7">
+      <h2 id="name-implementing-client-side-ab">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-implementing-client-side-ab" class="section-name selfRef">Implementing Client-Side ABR with DTS</a>
+      </h2>
+<p id="section-7-1">This section describes how DTS addresses the requirements that motivated client-side
+Adaptive Bitrate (ABR) proposals such as SWITCH (moq-transport PR #1378).<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div id="requirements-for-adaptive-streaming">
+<section id="section-7.1">
+        <h3 id="name-requirements-for-adaptive-s">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-requirements-for-adaptive-s" class="section-name selfRef">Requirements for Adaptive Streaming</a>
+        </h3>
+<p id="section-7.1-1">Client-side ABR proposals aim to solve the following requirements:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-7.1-2">
+<li id="section-7.1-2.1">
+            <p id="section-7.1-2.1.1"><strong>Bandwidth adaptation</strong>: Adjust video quality based on available network capacity<a href="#section-7.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-2.2">
+            <p id="section-7.1-2.2.1"><strong>Seamless switching</strong>: Transition between quality levels without decode errors<a href="#section-7.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-2.3">
+            <p id="section-7.1-2.3.1"><strong>Client control</strong>: Allow subscribers to influence quality selection based on
+application-specific context (device capabilities, user preferences, power state)<a href="#section-7.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-2.4">
+            <p id="section-7.1-2.4.1"><strong>Low latency switching</strong>: Minimize delay when changing quality levels<a href="#section-7.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li id="section-7.1-2.5">
+            <p id="section-7.1-2.5.1"><strong>Efficient resource use</strong>: Avoid wasting bandwidth on content that won't be displayed<a href="#section-7.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ol>
+</section>
+</div>
+<div id="the-switch-approach">
+<section id="section-7.2">
+        <h3 id="name-the-switch-approach">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-the-switch-approach" class="section-name selfRef">The SWITCH Approach</a>
+        </h3>
+<p id="section-7.2-1">The SWITCH proposal addresses these requirements through explicit client-driven switching:<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7.2-2">
+<pre>
+SWITCH Message {
+  From Subscribe Request ID (vi64),
+  To Subscribe Request ID (vi64),
+  To Fetch Request ID (vi64),
+  Track Namespace (..),
+  Track Name (..),
+  Minimum Switching Group ID (vi64),
+  Parameters (..)
+}
+</pre><a href="#section-7.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7.2-3">In the SWITCH model:<a href="#section-7.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7.2-4.1">
+            <p id="section-7.2-4.1.1">Subscriber maintains a single active subscription at a time<a href="#section-7.2-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.2-4.2">
+            <p id="section-7.2-4.2.1">Subscriber runs an ABR algorithm to decide when and what to switch to<a href="#section-7.2-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.2-4.3">
+            <p id="section-7.2-4.3.1">Subscriber sends SWITCH message to request transition to a different track<a href="#section-7.2-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.2-4.4">
+            <p id="section-7.2-4.4.1">Relay processes switch locally, using FETCH for past content if needed<a href="#section-7.2-4.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-7.2-4.5">
+            <p id="section-7.2-4.5.1">Switch occurs at a common group boundary<a href="#section-7.2-4.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+</section>
+</div>
+<div id="addressing-requirements-with-dts">
+<section id="section-7.3">
+        <h3 id="name-addressing-requirements-wit">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-addressing-requirements-wit" class="section-name selfRef">Addressing Requirements with DTS</a>
+        </h3>
+<p id="section-7.3-1">DTS addresses the same requirements through relay-side switching with subscriber hints:<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+<p id="section-7.3-2"><strong>Bandwidth adaptation</strong>: The relay continuously monitors downstream bandwidth via the
+QUIC stack and automatically selects the best rendition that fits. The subscriber
+pre-subscribes to all renditions, enabling the relay to switch without round-trips.<a href="#section-7.3-2" class="pilcrow">¶</a></p>
+<p id="section-7.3-3"><strong>Seamless switching</strong>: The relay switches only at group boundaries where all tracks
+are time-aligned, ensuring decode continuity. The publisher indicates throughput
+thresholds to guide selection.<a href="#section-7.3-3" class="pilcrow">¶</a></p>
+<p id="section-7.3-4"><strong>Client control</strong>: While the relay makes switching decisions, subscribers can
+influence selection via REQUEST_UPDATE with SWITCHING-SET-ASSIGNMENT:<a href="#section-7.3-4" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+          <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Action</th>
+              <th class="text-left" rowspan="1" colspan="1">Mechanism</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Force rendition</td>
+              <td class="text-left" rowspan="1" colspan="1">Set throughput=0 (always selected)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Exclude rendition</td>
+              <td class="text-left" rowspan="1" colspan="1">Set throughput=MAX (never selected)</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Freeze selection</td>
+              <td class="text-left" rowspan="1" colspan="1">Set activate=0</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Resume switching</td>
+              <td class="text-left" rowspan="1" colspan="1">Set activate=1</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Adjust budget</td>
+              <td class="text-left" rowspan="1" colspan="1">Change fraction value</td>
+            </tr>
+          </tbody>
+        </table>
+<p id="section-7.3-6">This allows subscribers to set quality floors, lock to specific renditions during
+critical moments, or adjust bandwidth allocation based on application context.<a href="#section-7.3-6" class="pilcrow">¶</a></p>
+<p id="section-7.3-7"><strong>Low latency switching</strong>: The relay switches at the next group boundary without
+waiting for a client round-trip. Bandwidth changes are detected and acted upon
+immediately.<a href="#section-7.3-7" class="pilcrow">¶</a></p>
+<p id="section-7.3-8"><strong>Efficient resource use</strong>: The relay sets Forward=0 for non-selected tracks,
+preventing transmission of content that won't be displayed.<a href="#section-7.3-8" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="comparison">
+<section id="section-7.4">
+        <h3 id="name-comparison">
+<a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-comparison" class="section-name selfRef">Comparison</a>
+        </h3>
+<table class="center" id="table-2">
+          <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">Requirement</th>
+              <th class="text-left" rowspan="1" colspan="1">SWITCH</th>
+              <th class="text-left" rowspan="1" colspan="1">DTS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Bandwidth adaptation</td>
+              <td class="text-left" rowspan="1" colspan="1">Client ABR algorithm</td>
+              <td class="text-left" rowspan="1" colspan="1">Relay measures and adapts</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Seamless switching</td>
+              <td class="text-left" rowspan="1" colspan="1">Group boundary alignment</td>
+              <td class="text-left" rowspan="1" colspan="1">Group boundary alignment</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Client control</td>
+              <td class="text-left" rowspan="1" colspan="1">Full control via SWITCH</td>
+              <td class="text-left" rowspan="1" colspan="1">Hints via REQUEST_UPDATE</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Switch latency</td>
+              <td class="text-left" rowspan="1" colspan="1">RTT + message processing</td>
+              <td class="text-left" rowspan="1" colspan="1">Next group boundary</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Resource efficiency</td>
+              <td class="text-left" rowspan="1" colspan="1">Single subscription</td>
+              <td class="text-left" rowspan="1" colspan="1">Forward=0 for non-selected</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Client complexity</td>
+              <td class="text-left" rowspan="1" colspan="1">ABR algorithm required</td>
+              <td class="text-left" rowspan="1" colspan="1">Delegate to relay</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Multiple streams</td>
+              <td class="text-left" rowspan="1" colspan="1">Separate logic per stream</td>
+              <td class="text-left" rowspan="1" colspan="1">Unified via switching sets</td>
+            </tr>
+          </tbody>
+        </table>
+<p id="section-7.4-2">DTS provides equivalent functionality to SWITCH while enabling the relay to make
+faster, better-informed decisions based on direct bandwidth measurement. Subscribers
+retain the ability to influence or override relay decisions when application-specific
+context warrants it.<a href="#section-7.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-8">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-8-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+"<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-9-1">TODO Security<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-10-1">This document has no IANA actions.<a href="#section-10-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-11">
+      <h2 id="name-references">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-11.1">
+        <h3 id="name-normative-references">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="MOQT">[MOQT]</dt>
+        <dd>
+<span class="refAuthor">Nandakumar, S.</span>, <span class="refAuthor">Vasiliev, V.</span>, <span class="refAuthor">Swett, I.</span>, and <span class="refAuthor">A. Frindell</span>, <span class="refTitle">"Media over QUIC Transport"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-moq-transport-16</span>, <time datetime="2026-01-13" class="refDate">13 January 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-moq-transport-16">https://datatracker.ietf.org/doc/html/draft-ietf-moq-transport-16</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-11.2">
+        <h3 id="name-informative-references">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-scone-protocol">[I-D.ietf-scone-protocol]</dt>
+      <dd>
+<span class="refAuthor">Thomson, M.</span>, <span class="refAuthor">Huitema, C.</span>, <span class="refAuthor">Oku, K.</span>, <span class="refAuthor">Joras, M.</span>, and <span class="refAuthor">L. M. Ihlar</span>, <span class="refTitle">"Standard Communication with Network Elements (SCONE) Protocol"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-scone-protocol-04</span>, <time datetime="2025-12-14" class="refDate">14 December 2025</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-scone-protocol-04">https://datatracker.ietf.org/doc/html/draft-ietf-scone-protocol-04</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="usecase-appendix">
+<section id="appendix-A">
+      <h2 id="name-use-cases">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-use-cases" class="section-name selfRef">Use Cases</a>
+      </h2>
+<p id="appendix-A-1">This appendix describes several use cases that motivate Dynamic Track Switching,
+organized by the complexity of switching set configurations.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+<div id="use-cases-single-switching-set">
+<section id="appendix-A.1">
+        <h3 id="name-use-cases-single-switching-">
+<a href="#appendix-A.1" class="section-number selfRef">A.1. </a><a href="#name-use-cases-single-switching-" class="section-name selfRef">Use Cases: Single Switching Set</a>
+        </h3>
+<p id="appendix-A.1-1">These use cases involve a single media source with multiple quality renditions.<a href="#appendix-A.1-1" class="pilcrow">¶</a></p>
+<div id="usecase-abr">
+<section id="appendix-A.1.1">
+          <h4 id="name-adaptive-bitrate-streaming-">
+<a href="#appendix-A.1.1" class="section-number selfRef">A.1.1. </a><a href="#name-adaptive-bitrate-streaming-" class="section-name selfRef">Adaptive Bitrate Streaming (ABR)</a>
+          </h4>
+<p id="appendix-A.1.1-1">In adaptive bitrate streaming, a single media source (e.g., a live video stream) is encoded
+at multiple quality levels (renditions) with different bitrates and resolutions. The goal is
+to deliver the highest quality rendition that the network path can sustain at any given moment.
+When bandwidth decreases, the system should switch to a lower quality rendition to avoid
+rebuffering. When bandwidth increases, it should switch to a higher quality rendition to
+improve viewer experience.<a href="#appendix-A.1.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.1.1-2">The original publisher encodes the content into multiple renditions (e.g., 1080p at 5 Mbps,
+720p at 2 Mbps, 480p at 800 kbps) and publishes each as a separate track with temporal
+alignment at group boundaries. The publisher/subscriber advertises the throughput requirements and
+indicates that these tracks form a switching set. The end subscriber subscribes to all
+renditions in the switching set and receives whichever rendition the relay selects. The
+relay monitors downstream bandwidth, selects the highest quality rendition that fits within
+the available capacity, and switches to a different rendition at group boundaries when
+bandwidth conditions change.<a href="#appendix-A.1.1-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.1.1-3">
+<pre>
+            ┌──────────────────────────────────────────┐
+            │          Original Publisher              │
+            │                                          │
+            │  ┌─────────┐ ┌─────────┐ ┌─────────┐     │
+            │  │ 1080p   │ │  720p   │ │  480p   │     │
+            │  │ 5 Mbps  │ │ 2 Mbps  │ │ 800kbps │     │
+            │  └────┬────┘ └────┬────┘ └────┬────┘     │
+            │       │           │           │          │
+            └───────┼───────────┼───────────┼──────────┘
+                    │           │           │
+                    ▼           ▼           ▼
+            ┌──────────────────────────────────────────┐
+            │                 Relay                    │
+            │                                          │
+            │  Receives all renditions, selects one    │
+            │  based on throughput thresholds and      │
+            │  downstream bandwidth                    │
+            └───────────────────┬──────────────────────┘
+                                │
+                                │  Selected rendition
+                                │  (e.g., 720p @ 2 Mbps)
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │             End Subscriber               │
+            │                                          │
+            │  Receives single stream, quality varies  │
+            │  based on available bandwidth            │
+            │                                          │
+            └──────────────────────────────────────────┘
+</pre><a href="#appendix-A.1.1-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="use-cases-multiple-switching-sets">
+<section id="appendix-A.2">
+        <h3 id="name-use-cases-multiple-switchin">
+<a href="#appendix-A.2" class="section-number selfRef">A.2. </a><a href="#name-use-cases-multiple-switchin" class="section-name selfRef">Use Cases: Multiple Switching Sets</a>
+        </h3>
+<p id="appendix-A.2-1">These use cases involve several concurrent media sources, each with quality renditions,
+requiring bandwidth allocation based on relative priorities.<a href="#appendix-A.2-1" class="pilcrow">¶</a></p>
+<div id="usecase-videoconf">
+<section id="appendix-A.2.1">
+          <h4 id="name-video-conferencing-grid-lay">
+<a href="#appendix-A.2.1" class="section-number selfRef">A.2.1. </a><a href="#name-video-conferencing-grid-lay" class="section-name selfRef">Video Conferencing Grid Layout</a>
+          </h4>
+<p id="appendix-A.2.1-1">In a video conference with multiple participants, each participant's video may be displayed
+in a grid layout. When many participants are present, not all videos can be displayed at
+full resolution due to screen real estate and bandwidth constraints. The system needs to
+deliver multiple participant streams simultaneously, potentially at different quality levels
+based on their importance (e.g., active speaker at high quality, other participants at
+lower quality).<a href="#appendix-A.2.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.1-2">Each original publisher (participant) encodes their video at multiple quality levels and
+publishes these as a switching set. The end subscriber subscribes to multiple switching
+sets (one per participant) and assigns Set throughput fraction values to indicate bandwidth
+allocation—for example, giving the active speaker a higher fraction than other participants.
+When the active speaker changes, the subscriber adjusts fraction values. The relay allocates
+its forwarding capacity across all switching sets according to the subscriber-indicated
+fractions, selecting appropriate quality levels for each participant stream to fit within
+the allocated bandwidth.<a href="#appendix-A.2.1-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.2.1-3">
+<pre>
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          Original Publishers                                 │
+│                                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │ Participant │  │ Participant │  │ Participant │  │ Participant │   ...    │
+│  │     A       │  │     B       │  │     C       │  │     D       │          │
+│  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │  │ hi/med/lo   │          │
+│  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │  │ prio:1/2/3  │          │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘          │
+│         │                │                │                │                 │
+└─────────┼────────────────┼────────────────┼────────────────┼─────────────────┘
+          │                │                │                │
+          ▼                ▼                ▼                ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  Relay                                       │
+│                                                                              │
+│   Allocates bandwidth across multiple switching sets (participants)          │
+│   Selects quality per participant based on:                                  │
+│     - Subscriber-indicated Set throughput fraction per set                   │
+│     - Total available bandwidth                                              │
+│     - Publisher-indicated rendition throughput thresholds                    │
+│                                                                              │
+└─────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                                      │  Multiple streams at varying qualities
+                                      │  (e.g., A@hi, B@med, C@lo, D@lo)
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             End Subscriber                                   │
+│                                                                              │
+│   ┌───────────────────────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐       │
+│   │                           │  │         │  │         │  │         │       │
+│   │     Participant A         │  │  Part B │  │  Part C │  │  Part D │       │
+│   │     (high quality)        │  │  (med)  │  │  (low)  │  │  (low)  │       │
+│   │                           │  │         │  │         │  │         │       │
+│   └───────────────────────────┘  └─────────┘  └─────────┘  └─────────┘       │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+</pre><a href="#appendix-A.2.1-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="usecase-screenshare">
+<section id="appendix-A.2.2">
+          <h4 id="name-screen-sharing-with-video">
+<a href="#appendix-A.2.2" class="section-number selfRef">A.2.2. </a><a href="#name-screen-sharing-with-video" class="section-name selfRef">Screen Sharing with Video</a>
+          </h4>
+<p id="appendix-A.2.2-1">A participant shares their screen while also transmitting camera video. The screen content
+may have different characteristics than camera video (e.g., higher resolution for text
+readability, lower frame rate acceptable). The system needs to prioritize bandwidth between
+screen sharing and camera video based on content type and subscriber preferences.<a href="#appendix-A.2.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.2-2">The original publisher encodes both screen share and camera video at multiple quality levels,
+publishing each content type as a separate switching set with content type indicated in the
+catalog. The end subscriber subscribes to both switching sets, assigning higher weight to
+screen share than camera video based on content type, and may specify a minimum acceptable
+quality (throughput) for the screen share to ensure text remains readable. The relay manages
+bandwidth allocation between the two content types, degrading camera video quality before
+reducing screen share quality when bandwidth becomes constrained.<a href="#appendix-A.2.2-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.2.2-3">
+<pre>
+┌────────────────────────────────────────────────────────────────────┐
+│                        Original Publisher                          │
+│                                                                    │
+│  ┌────────────────────────┐    ┌────────────────────────┐          │
+│  │     Screen Share       │    │     Camera Video       │          │
+│  │ ┌───────┐ ┌───────┐    │    │ ┌───────┐ ┌───────┐    │          │
+│  │ │1080p  │ │ 720p  │    │    │ │ 720p  │ │ 360p  │    │          │
+│  │ │2 Mbps │ │800kbps│    │    │ │1.5Mbps│ │400kbps│    │          │
+│  │ └───┬───┘ └───┬───┘    │    │ └───┬───┘ └───┬───┘    │          │
+│  │     │         │        │    │     │         │        │          │
+│  └─────┼─────────┼────────┘    └─────┼─────────┼────────┘          │
+│        │         │                   │         │                   │
+└────────┼─────────┼───────────────────┼─────────┼───────────────────┘
+         │         │                   │         │
+         ▼         ▼                   ▼         ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Manages two switching sets                                        │
+│  Allocates bandwidth based on subscriber-indicated weights         │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Screen@1080p + Camera@360p
+                               │  (prioritizing screen readability)
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                         End Subscriber                             │
+│                                                                    │
+│  ┌─────────────────────────────────┐  ┌──────────────────┐         │
+│  │                                 │  │                  │         │
+│  │        Screen Share             │  │  Camera (small)  │         │
+│  │     (high quality for text)     │  │  (lower quality) │         │
+│  │                                 │  │                  │         │
+│  └─────────────────────────────────┘  └──────────────────┘         │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+</pre><a href="#appendix-A.2.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="usecase-vr">
+<section id="appendix-A.2.3">
+          <h4 id="name-vr-ar-streaming">
+<a href="#appendix-A.2.3" class="section-number selfRef">A.2.3. </a><a href="#name-vr-ar-streaming" class="section-name selfRef">VR/AR Streaming</a>
+          </h4>
+<p id="appendix-A.2.3-1">Virtual and augmented reality applications require streaming high-resolution immersive content
+while adapting to available bandwidth. Two key scenarios benefit from DTS: foveated rendering
+where quality varies based on gaze direction, and multi-layer environments where different
+scene elements have different quality requirements.<a href="#appendix-A.2.3-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.3-2">In foveated rendering, a 360-degree video is divided into tiles. The tile where the user is
+currently looking (determined by eye tracking) receives highest quality, while peripheral
+tiles receive lower quality. As the user's gaze shifts, bandwidth allocation must dynamically
+shift between tiles.<a href="#appendix-A.2.3-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.2.3-3">The original publisher encodes each tile at multiple quality levels and publishes them as
+separate switching sets, indicating spatial relationships between tiles. The end subscriber
+subscribes to all tiles within the field of view and as gaze direction changes, assigns
+a higher Set throughput fraction to the gaze tile and lower fractions to peripheral tiles.
+The relay responds rapidly to these updates, reallocating bandwidth to deliver high quality
+for the gaze tile while maintaining lower quality for surrounding tiles.<a href="#appendix-A.2.3-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.2.3-4">
+<pre>
+┌────────────────────────────────────────────────────────────────────┐
+│                      VR Headset (Publisher)                        │
+│                                                                    │
+│  360° Video Tiles (each with quality variants)                     │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐            │
+│  │ Tile 1 │ │ Tile 2 │ │ Tile 3 │ │ Tile 4 │ │ Tile 5 │  ...       │
+│  │ hi/lo  │ │ hi/lo  │ │ hi/lo  │ │ hi/lo  │ │ hi/lo  │            │
+│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘            │
+│      │          │    [GAZE]│          │          │                 │
+└──────┼──────────┼──────────┼──────────┼──────────┼─────────────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Receives gaze direction updates (weights) from subscriber         │
+│  Allocates bandwidth: high quality to gaze tile, lower to periph.  │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Tile3@hi, others@lo
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                         End Subscriber                             │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │                    360° Rendered View                    │      │
+│  │  ┌─────┐ ┌─────┐ ┌─────────────┐ ┌─────┐ ┌─────┐         │      │
+│  │  │ lo  │ │ lo  │ │     hi      │ │ lo  │ │ lo  │         │      │
+│  │  │     │ │     │ │ (gaze area) │ │     │ │     │         │      │
+│  │  └─────┘ └─────┘ └─────────────┘ └─────┘ └─────┘         │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+</pre><a href="#appendix-A.2.3-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="use-cases-switching-sets-with-high-priority-streams">
+<section id="appendix-A.3">
+        <h3 id="name-use-cases-switching-sets-wi">
+<a href="#appendix-A.3" class="section-number selfRef">A.3. </a><a href="#name-use-cases-switching-sets-wi" class="section-name selfRef">Use Cases: Switching Sets with High-Priority Streams</a>
+        </h3>
+<p id="appendix-A.3-1">These use cases combine adaptive media with fixed-bandwidth streams that require
+guaranteed delivery.<a href="#appendix-A.3-1" class="pilcrow">¶</a></p>
+<div id="usecase-gaming">
+<section id="appendix-A.3.1">
+          <h4 id="name-cloud-gaming">
+<a href="#appendix-A.3.1" class="section-number selfRef">A.3.1. </a><a href="#name-cloud-gaming" class="section-name selfRef">Cloud Gaming</a>
+          </h4>
+<p id="appendix-A.3.1-1">Cloud gaming services stream rendered game video from servers to players. The video stream
+must adapt to network conditions while balancing resolution, frame rate, and latency based
+on game type and player preferences. Different game genres have different requirements:
+fast-paced action games prioritize frame rate and low latency, while strategy games may
+prioritize resolution.<a href="#appendix-A.3.1-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.1-2">Additionally, different regions of the game screen may have different importance: the HUD
+(heads-up display) with critical game information may need guaranteed quality, while the
+main game world adapts to remaining bandwidth.<a href="#appendix-A.3.1-2" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.1-3">The original publisher (game server) encodes the game world video at multiple quality levels
+and publishes the HUD as a separate fixed-bandwidth track. The publisher
+minimizes encoding latency to maintain gameplay responsiveness. The end subscriber subscribes
+to both the game video switching set and the HUD track, indicating that the HUD requires
+guaranteed bandwidth. The relay reserves bandwidth for the HUD first, then selects the
+appropriate game video quality from the remaining capacity, prioritizing low latency
+throughout the forwarding path.<a href="#appendix-A.3.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.3.1-4">
+<pre>
+┌────────────────────────────────────────────────────────────────────┐
+│                     Game Server (Publisher)                        │
+│                                                                    │
+│  ┌───────────────────────────────┐  ┌─────────────────────┐        │
+│  │      Game World Video         │  │    HUD/Overlay      │        │
+│  │ ┌───────┐ ┌───────┐ ┌───────┐ │  │ ┌───────┐           │        │
+│  │ │4K/60  │ │1080/60│ │720/60 │ │  │ │ Fixed │           │        │
+│  │ │25Mbps │ │8 Mbps │ │3 Mbps │ │  │ │200kbps│           │        │
+│  │ └───┬───┘ └───┬───┘ └───┬───┘ │  │ └───┬───┘           │        │
+│  └─────┼─────────┼─────────┼─────┘  └─────┼───────────────┘        │
+│        │         │         │              │                        │
+└────────┼─────────┼─────────┼──────────────┼────────────────────────┘
+         │         │         │              │
+         ▼         ▼         ▼              ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Reserves HUD bandwidth (subscriber-indicated guaranteed stream)   │
+│  Selects game quality from remainder based on throughput           │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Game@1080/60 + HUD@fixed
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                       Player (Subscriber)                          │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │ ┌──────────────────────────────────────────────────────┐ │      │
+│  │ │                                                      │ │      │
+│  │ │                   Game World                         │ │      │
+│  │ │                 (adaptive quality)                   │ │      │
+│  │ │                                                      │ │      │
+│  │ └──────────────────────────────────────────────────────┘ │      │
+│  │ ┌──────────────┐                    ┌──────────────┐     │      │
+│  │ │Health: XXX---│                    │ Ammo: 30/120 │     │      │
+│  │ └──────────────┘  HUD (guaranteed)  └──────────────┘     │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+</pre><a href="#appendix-A.3.1-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="usecase-sports">
+<section id="appendix-A.3.2">
+          <h4 id="name-live-sports-multi-view">
+<a href="#appendix-A.3.2" class="section-number selfRef">A.3.2. </a><a href="#name-live-sports-multi-view" class="section-name selfRef">Live Sports Multi-View</a>
+          </h4>
+<p id="appendix-A.3.2-1">Live sports broadcasts offer multiple camera angles: main game camera, sideline cameras,
+aerial views, and isolated player cameras. Viewers may want to watch multiple angles
+simultaneously, with the ability to prioritize different views. A stats overlay stream
+provides real-time game information. Bandwidth must be allocated across these streams
+based on viewer preferences that may change during the event (e.g., switching focus to
+replay angle).<a href="#appendix-A.3.2-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.2-2">The original publisher (broadcast origin) encodes each camera angle at multiple quality
+levels and publishes a stats overlay as a fixed-bandwidth stream. All streams share
+a common time reference for synchronization. The end subscriber subscribes to desired
+camera angles and the stats overlay, assigning Set throughput fraction values to indicate
+bandwidth allocation for each view. During highlights or replays, the subscriber dynamically
+adjusts fractions to shift focus to the relevant camera. The relay allocates bandwidth
+according to the fractions, maintains temporal sync across all forwarded streams, and
+responds promptly to fraction changes.<a href="#appendix-A.3.2-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.3.2-3">
+<pre>
+┌────────────────────────────────────────────────────────────────────┐
+│                   Broadcast Origin (Publisher)                     │
+│                                                                    │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐       │
+│  │ Main Cam   │ │  Sideline  │ │   Aerial   │ │Stats/Score │       │
+│  │ hi/med/lo  │ │ hi/med/lo  │ │ hi/med/lo  │ │  (fixed)   │       │
+│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘ └─────┬──────┘       │
+│        │              │              │              │              │
+└────────┼──────────────┼──────────────┼──────────────┼──────────────┘
+         │              │              │              │
+         ▼              ▼              ▼              ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Reserves stats bandwidth (subscriber-indicated guaranteed stream) │
+│  Allocates remaining bandwidth based on subscriber-indicated wts   │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Main@hi, Sideline@med, Aerial@lo, Stats
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                       Viewer (Subscriber)                          │
+│                                                                    │
+│  ┌────────────────────────────────┐  ┌───────────────────┐         │
+│  │                                │  │   Sideline View   │         │
+│  │      Main Camera View          │  │  (medium quality) │         │
+│  │      (high quality)            │  ├───────────────────┤         │
+│  │                                │  │   Aerial View     │         │
+│  │                                │  │   (low quality)   │         │
+│  └────────────────────────────────┘  └───────────────────┘         │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │ SCORE: Home 2 - Away 1 | Time: 73:24 | Possession: 58%   │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+</pre><a href="#appendix-A.3.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="usecase-teleop">
+<section id="appendix-A.3.3">
+          <h4 id="name-teleoperation-and-robotics">
+<a href="#appendix-A.3.3" class="section-number selfRef">A.3.3. </a><a href="#name-teleoperation-and-robotics" class="section-name selfRef">Teleoperation and Robotics</a>
+          </h4>
+<p id="appendix-A.3.3-1">Remote operation of robots, drones, or industrial equipment requires streaming multiple
+video feeds with different importance levels. The primary control camera (showing the
+manipulation task) requires highest quality and lowest latency. Secondary cameras
+providing situational awareness can accept lower quality. Sensor telemetry streams
+compete for bandwidth with video feeds.<a href="#appendix-A.3.3-1" class="pilcrow">¶</a></p>
+<p id="appendix-A.3.3-2">The original publisher (robot or drone) encodes the primary control camera at multiple
+quality levels with minimal encoding latency, encodes situational cameras at multiple
+levels, and publishes sensor telemetry as a separate fixed-bandwidth stream. All streams
+share a common time reference. The end subscriber subscribes to the primary camera
+with highest priority and specifies latency requirements, subscribes to telemetry with
+guaranteed bandwidth, and subscribes to situational cameras with lower priority. The
+relay prioritizes latency for the primary camera, reserves bandwidth for telemetry,
+and allocates remaining capacity to situational cameras.<a href="#appendix-A.3.3-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="appendix-A.3.3-3">
+<pre>
+┌────────────────────────────────────────────────────────────────────┐
+│                        Robot (Publisher)                           │
+│                                                                    │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│  │ Primary Cam │ │  Left Cam   │ │  Right Cam  │ │  Telemetry  │   │
+│  │(manipulate) │ │(situational)│ │(situational)│ │  (sensors)  │   │
+│  │ hi/med/lo   │ │   hi/lo     │ │   hi/lo     │ │  (fixed)    │   │
+│  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘   │
+│         │               │               │               │          │
+└─────────┼───────────────┼───────────────┼───────────────┼──────────┘
+          │               │               │               │
+          ▼               ▼               ▼               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                            Relay                                   │
+│                                                                    │
+│  Allocates bandwidth based on subscriber-indicated weights         │
+│  Latency-critical: minimize delay for primary control feed         │
+│                                                                    │
+└──────────────────────────────┬─────────────────────────────────────┘
+                               │
+                               │  Primary@hi, Left@lo, Right@lo, Telemetry
+                               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                    Operator Console (Subscriber)                   │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │                                                          │      │
+│  │          Primary Camera (high quality, low latency)      │      │
+│  │                                                          │      │
+│  └──────────────────────────────────────────────────────────┘      │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐        │
+│  │  Left Camera   │  │  Right Camera  │  │   Telemetry    │        │
+│  │  (low quality) │  │  (low quality) │  │ Temp: 45°C     │        │
+│  │                │  │                │  │ Battery: 73%   │        │
+│  └────────────────┘  └────────────────┘  └────────────────┘        │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+</pre><a href="#appendix-A.3.3-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1">TODO acknowledge.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Will Law</span></div>
+<div dir="auto" class="left"><span class="org">Akamai</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:2762250+wilaw@users.noreply.github.com" class="email">2762250+wilaw@users.noreply.github.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ian Swett</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ianswett@google.com" class="email">ianswett@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Suhas Nandakumar</span></div>
+<div dir="auto" class="left"><span class="org">Cisco</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:snandaku@cisco.com" class="email">snandaku@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mo Zanaty</span></div>
+<div dir="auto" class="left"><span class="org">Cisco</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mzanaty@cisco.com" class="email">mzanaty@cisco.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Victor Vasiliev</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:vasilvv@google.com" class="email">vasilvv@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ali Begen</span></div>
+<div dir="auto" class="left"><span class="org">Ozyegin University</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ali.begen@ozyegin.edu.tr" class="email">ali.begen@ozyegin.edu.tr</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Zafer Gurel</span></div>
+<div dir="auto" class="left"><span class="org">Ozyegin University</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:zafer.gurel@ozu.edu.tr" class="email">zafer.gurel@ozu.edu.tr</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Gwendal Simon</span></div>
+<div dir="auto" class="left"><span class="org">Synamedia</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:gsimon@synamedia.com" class="email">gsimon@synamedia.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
