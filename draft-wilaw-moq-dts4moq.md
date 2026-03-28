@@ -58,13 +58,15 @@ informative:
 --- abstract
 
 This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport (MOQT).
-DTS enables relays to dynamically select which track to forward from a set of related
-subscriptions based on available downstream bandwidth. Two approaches are specified:
-a switching-set-assignment approach where subscribers explicitly group subscriptions,
-and a track-filter approach using SUBSCRIBE_NAMESPACE with publisher-advertised track
-properties. For scenarios with multiple switching sets, a relay adaptation algorithm
-allocates bandwidth based on subscriber_priority, enabling use cases such as
-adaptive bitrate streaming, video conferencing, and cloud gaming.
+DTS enables relays to dynamically select which track to forward from a switching set—a
+collection of time-aligned tracks representing the same content at different quality levels,
+typically from a single source.
+The relay selects exactly one track per switching set at each group boundary based on
+available downstream bandwidth. Subscribers use the SWITCHING-SET-ASSIGNMENT parameter to
+group subscriptions into switching sets. When multiple switching sets are present,
+subscribers specify relative bandwidth allocation via Set throughput fraction, enabling
+the relay adaptation algorithm to allocate bandwidth across sets before selecting
+renditions within each set.
 
 
 --- middle
@@ -72,19 +74,35 @@ adaptive bitrate streaming, video conferencing, and cloud gaming.
 # Introduction
 
 This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport [MOQT].
-DTS enables relays to dynamically select which track to forward from a set of related
-subscriptions based on available downstream bandwidth.
+DTS enables relays to dynamically select which track to forward from a switching set based
+on available downstream bandwidth.
 
-This document specifies two solution approaches:
+DTS addresses a range of real-time media applications where bandwidth-adaptive delivery
+improves user experience. These include adaptive bitrate streaming for live video, video
+conferencing with multiple participants at varying quality levels, VR/AR streaming with
+gaze-based quality allocation, and hybrid scenarios combining adaptive streams with
+fixed-bandwidth overlays such as cloud gaming HUDs or sports statistics. These use cases
+(detailed in {{usecase-appendix}}) drive the requirements for originla publishers, end subscribers,
+and relays specified in this document.
 
-- **Single Switching Set**: For scenarios like Adaptive Bitrate Streaming where one stream
-  has multiple quality renditions.
+A switching set is a collection of MoQ tracks representing the same content encoded at
+different quality levels (renditions), typically from a single source. Tracks within a switching set are time-aligned at
+group boundaries, allowing the relay to switch between renditions without causing decode
+errors. The relay selects exactly one track per switching set to forward at any given time.
 
-- **Multiple Switching Sets**: For scenarios like video conferencing where multiple streams
-  each have quality renditions and bandwidth must be allocated across them.
+Subscribers can create switching sets through two methods:
 
-Both approaches share a common relay adaptation algorithm ({{relay-adaptation-algorithm}})
-that handles bandwidth allocation and rendition selection.
+- **Individual SUBSCRIBE**: Subscriber sends SUBSCRIBE for each track with
+  SWITCHING-SET-ASSIGNMENT parameter to group them into switching sets.
+
+- **SUBSCRIBE_NAMESPACE with TRACK_FILTER**: Subscriber uses namespace subscription with
+  a filter to select top-N tracks ranked by a specified property (e.g., VIEWCOUNT for
+  selecting the most popular streams), and the relay applies DTS switching to each
+  selected source.
+
+Both methods result in the same relay behavior: the relay processes one or more switching
+sets, allocates bandwidth based on Set throughput fraction, and selects the best rendition
+per set at each group boundary.
 
 # Requirements
 
@@ -92,19 +110,88 @@ This section describes the requirements that Dynamic Track Switching places on o
 publishers, end subscribers, and relays. These requirements are derived from the use cases
 described in {{usecase-appendix}}.
 
-The use cases cover a range of real-world applications:
+## Mapping to MoQ Model
 
-- **Single switching set:** A single media source with multiple quality renditions, such as
-  Adaptive Bitrate Streaming ({{usecase-abr}}).
+A **rendition** is a single encoding of content at a specific quality level (e.g., 1080p at 5 Mbps).
+Each rendition corresponds to exactly one MoQ **track**.
 
-- **Multiple switching sets:** Several concurrent media sources each with quality renditions,
-  requiring bandwidth allocation based on relative priorities—video conferencing
-  ({{usecase-videoconf}}), screen sharing ({{usecase-screenshare}}), and VR/AR streaming
-  ({{usecase-vr}}).
+A **switching set** is a collection of one or more tracks that represent the same content encoded
+at different quality levels. All tracks within a switching set MUST be time-aligned at group
+boundaries to enable seamless switching. The relay selects exactly one track from the switching
+set to forward at any given time.
 
-- **Switching set(s) with high-priority streams:** Adaptive media combined with fixed-bandwidth
-  streams requiring priority delivery—cloud gaming ({{usecase-gaming}}), live sports
-  ({{usecase-sports}}), and teleoperation ({{usecase-teleop}}).
+~~~
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Switching Set to MoQ Mapping                      │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│                        ┌──────────┐                                  │
+│                        │  Source  │                                  │
+│                        └────┬─────┘                                  │
+│                             │                                        │
+│              ┌──────────────┼──────────────┐                         │
+│              │              │              │                         │
+│              v              v              v                         │
+│         ┌────────┐    ┌────────┐    ┌────────┐                       │
+│         │ 1080p  │    │  720p  │    │  480p  │   (3 quality levels)  │
+│         │ 5 Mbps │    │ 2 Mbps │    │800 kbps│                       │
+│         └────────┘    └────────┘    └────────┘                       │
+│              │              │              │                         │
+│              v              v              v                         │
+│         ┌────────┐    ┌────────┐    ┌────────┐                       │
+│         │ Track 1│    │ Track 2│    │ Track 3│   (3 MoQ Tracks)      │
+│         └────────┘    └────────┘    └────────┘                       │
+│              │              │              │                         │
+│              └──────────────┼──────────────┘                         │
+│                             v                                        │
+│              ┌─────────────────────────────┐                         │
+│              │       Switching Set         │                         │
+│              │   (time-aligned at group    │                         │
+│              │        boundaries)          │                         │
+│              └─────────────────────────────┘                         │
+│                                                                      │
+│ Relay receives all tracks, forwards exactly ONE based on bandwidth   │
+└──────────────────────────────────────────────────────────────────────┘
+~~~
+
+For scenarios with multiple independent sources, each source has its own switching set.
+The relay manages bandwidth allocation across all switching sets while selecting one
+track per set.
+
+~~~
+┌──────────────────────────────────────────────────────────────────────┐
+│                      Multiple Switching Sets                         │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│ ┌─── Switching Set 1 ───┐  ┌─── Switching Set 2 ───┐                 │
+│ │       (Alice)         │  │        (Bob)          │                 │
+│ │                       │  │                       │                 │
+│ │ Track   Track   Track │  │ Track   Track   Track │                 │
+│ │ 1080p   720p    480p  │  │ 1080p   720p    480p  │    ...          │
+│ │                       │  │                       │                 │
+│ └───────────────────────┘  └───────────────────────┘                 │
+│          │                          │                                │
+│          v                          v                                │
+│    [Relay selects           [Relay selects                           │
+│     720p for Alice]          480p for Bob]                           │
+│                                                                      │
+│ Bandwidth allocated across sets based on Set throughput fraction     │
+└──────────────────────────────────────────────────────────────────────┘
+~~~
+
+## Content Requirements
+
+For tracks to participate in a dynamic switching set, they:
+
+* MUST be time aligned at group boundaries. This enables the relay to switch
+  between renditions at group boundaries without causing decode errors.
+
+* MUST hold equivalent and independent versions of the same content, encoded
+  at different bitrates. DTS is not a solution for switching between Scalable
+  Video Coding (SVC) layers, which have dependencies between layers.
+
+* SHOULD have consistent group durations across all renditions within a
+  switching set to simplify relay timing decisions.
 
 ## Original Publisher Requirements
 
@@ -155,9 +242,9 @@ preferences to relays.
   streams (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-gaming}},
   {{usecase-sports}}, {{usecase-teleop}})
 
-- MUST indicate relative importance via subscriber_priority for each switching set to guide
-  relay bandwidth allocation (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}},
-  {{usecase-sports}}, {{usecase-teleop}})
+- MUST indicate relative bandwidth allocation via Set throughput fraction for each switching
+  set to guide relay bandwidth allocation (see {{usecase-videoconf}}, {{usecase-screenshare}},
+  {{usecase-vr}}, {{usecase-sports}}, {{usecase-teleop}})
 
 - SHOULD use content type characteristics from the catalog to determine appropriate relative
   priorities or weights (see {{usecase-screenshare}}, {{usecase-gaming}}, {{usecase-teleop}})
@@ -196,14 +283,13 @@ subscribe parameters in subscribe or subscribe namespace messages.
   (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-gaming}},
   {{usecase-sports}}, {{usecase-teleop}})
 
-- MUST respect subscriber_priority values when selecting groups to forward
+- MUST respect Set throughput fraction values when allocating bandwidth to switching sets
   (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-sports}})
 
-- SHOULD implement degradation based on subscriber_priority when total capacity is insufficient,
-  reducing quality of lower-priority content before higher-priority content
+- SHOULD select appropriate quality levels within each set's allocated bandwidth
   (see {{usecase-videoconf}}, {{usecase-screenshare}})
 
-- MUST respond rapidly to subscriber_priority updates from subscribers
+- MUST respond rapidly to Set throughput fraction updates from subscribers
   (see {{usecase-videoconf}}, {{usecase-vr}}, {{usecase-sports}})
 
 - MUST prioritize forwarding groups for high-priority streams before performing adaptive
@@ -217,626 +303,730 @@ subscribe parameters in subscribe or subscribe namespace messages.
 
 - SHOULD minimize switching latency when bandwidth conditions change (see {{usecase-abr}})
 
-- SHOULD minimize switching latency when bandwidth conditions change
+# SWITCHING-SET-ASSIGNMENT Parameter {#switching-set-assignment}
 
-# Single Switching Set {#single-switching-set}
-
-A single switching set represents one media source with multiple quality renditions. The relay
-selects exactly one rendition to forward based on available bandwidth. This section describes
-two approaches for implementing single switching set DTS.
-
-## Approach 1: SUBSCRIBE with Switching-Set Parameters {#approach-subscribe}
-
-The subscriber explicitly groups tracks into a switching set using new SUBSCRIBE parameters.
-
-### Subscribe Parameters
-
-#### SWITCHING-SET-ASSIGNMENT Parameter
-
-The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) MAY appear in a SUBSCRIBE or
-REQUEST_UPDATE message. This parameter assigns the subscription to a DTS switching set.
+The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) MAY appear in a SUBSCRIBE,
+REQUEST_UPDATE, or PUBLISH_OK message. This parameter assigns a subscription to a DTS
+switching set and specifies bandwidth allocation.
 
 ~~~
 SWITCHING-SET-ASSIGNMENT {
   Switching set ID (vi64),
   Throughput threshold (vi64),
   Set throughput fraction (vi64),
-  Activate switching (1)
+  Activate switching (1),
+  [Set rank (8)]
 }
 ~~~
 
-* **Switching set ID**: Integer identifying the switching set. Zero indicates no switching set.
+* **Switching set ID**: Integer identifying the switching set. A track MUST only be assigned
+  to one switching set at a time.
+
 * **Throughput threshold**: Minimum throughput (kbps) required to select this track.
-  MUST be omitted if Switching set ID is zero.
-* **Selection time limit**: Maximum time (ms) the relay waits for this track's group before
-  disqualifying it. MUST be omitted if Switching set ID is zero.
 
-The relative priority of switching sets for bandwidth allocation is indicated using the
-SUBSCRIBER_PRIORITY parameter defined in [MOQT] Section 9.3.5. Lower subscriber_priority
-values indicate higher importance. The relay adaptation algorithm ({{relay-adaptation-algorithm}})
-uses subscriber_priority to allocate bandwidth across multiple switching sets.
+* **Set throughput fraction**: The fraction of connection throughput allocated to this switching
+  set, expressed as an integer 1 <= N <= 10. The set receives N/10 of estimated bandwidth.
 
-#### DTS-ACTIVATION Parameter
+* **Activate switching**: 0 if more subscriptions will be added to the set, or 1 if the
+  relay should activate switching immediately.
 
-The DTS-ACTIVATION parameter (Parameter Type 0x43) enables or disables DTS for a switching set.
+* **Set rank** (optional): Relative rank for bandwidth allocation across sets, expressed as
+  an 8-bit unsigned integer (1-255). Default is 1. Values outside this range MUST result in
+  a protocol error. When all sets have the same rank (default), bandwidth is allocated
+  proportionally. When sets have different ranks, lower values receive higher priority
+  during allocation.
 
-For tracks to participate in a dynamic switching set, they
+# Subscriber Setup Methods {#subscriber-setup}
 
-* **Switching set ID**: References a previously defined switching set.
-* **State**: 1 activates DTS, 0 deactivates it.
+Subscribers can create switching sets through two methods. Both result in identical
+relay behavior.
 
-### Client Workflow
+## Method 1: Individual SUBSCRIBE {#method-subscribe}
 
-1. Client determines available renditions via catalog or out-of-band mechanism.
-2. Client selects a unique integer identifier for the switching set.
-3. For each rendition, client sends SUBSCRIBE with SWITCHING-SET-ASSIGNMENT parameter
-   containing: set ID, throughput threshold, and selection time limit. The SUBSCRIBER_PRIORITY
-   parameter indicates the relative importance of this switching set.
-4. On the final SUBSCRIBE, client includes DTS-ACTIVATION with State=1 to activate.
+This method is used when the subscriber knows in advance which tracks to subscribe to
+and wants explicit control over switching set membership. The subscriber sends a separate
+SUBSCRIBE message for each track, including the SWITCHING-SET-ASSIGNMENT parameter to
+assign the track to a switching set.
+
+Tracks are grouped into a switching set by specifying the same Switching set ID. The
+subscriber sets activate=0 for all tracks except the last one in each set, then sets
+activate=1 on the final track to signal that the set is complete and the relay should
+begin active track selection.
+
+The Set throughput fraction indicates what portion of total bandwidth this switching set
+should receive. The fraction values across all sets should sum to 10 (representing 100%
+of available bandwidth), though the relay will normalize if they do not.
+
+This example shows a subscriber creating two switching sets for a live sports broadcast:
+main camera (set 1) and sideline camera (set 2), each with two quality renditions.
 
 ~~~
-Client                                  Relay
+Subscriber                              Relay
   |                                       |
-  |  SUBSCRIBE track=1080p                |
+  |  // Switching Set 1: Main Camera      |
+  |                                       |
+  |  SUBSCRIBE track=main/1080p           |
   |    SWITCHING-SET-ASSIGNMENT{          |
-  |      id=1, throughput=5000,           |
-  |      timeout=100}                     |
-  |    SUBSCRIBER_PRIORITY=10             |
+  |      id=1, throughput=3000,           |
+  |      fraction=6, activate=0}          |
   |-------------------------------------->|
   |                                       |
-  |  SUBSCRIBE track=720p                 |
-  |    SWITCHING-SET-ASSIGNMENT{          |
-  |      id=1, throughput=2000,           |
-  |      timeout=100}                     |
-  |    SUBSCRIBER_PRIORITY=10             |
-  |-------------------------------------->|
-  |                                       |
-  |  SUBSCRIBE track=480p                 |
+  |  SUBSCRIBE track=main/480p            |
   |    SWITCHING-SET-ASSIGNMENT{          |
   |      id=1, throughput=800,            |
-  |      timeout=100}                     |
-  |    SUBSCRIBER_PRIORITY=10             |
-  |    DTS-ACTIVATION{id=1, state=1}      |
+  |      fraction=6, activate=1}          |
   |-------------------------------------->|
   |                                       |
   |  (Relay activates DTS for set 1)      |
   |                                       |
-~~~
-
-To modify the switching set:
-
-- **Disable DTS**: Send REQUEST_UPDATE with DTS-ACTIVATION State=0
-- **Remove track**: Send REQUEST_UPDATE with SWITCHING-SET-ASSIGNMENT id=0
-- **Add track**: Send new SUBSCRIBE with SWITCHING-SET-ASSIGNMENT pointing to existing set
-
-### Relay Workflow
-
-1. On receiving SWITCHING-SET-ASSIGNMENT, relay adds subscription to the switching set
-   (creating it if needed). Forward state is set to 0.
-
-2. On receiving DTS-ACTIVATION with State=1, relay activates track selection and begins
-   monitoring bandwidth using the algorithm in {{relay-adaptation-algorithm}}.
-
-3. When Group N arrives from any track in the set, relay evaluates which track to forward:
-   - Select track with highest throughput threshold <= estimated bandwidth
-   - Set Forward state to 1 for selected track, 0 for others
-   - If no track fits, set all Forward states to 0
-
-4. If the arriving track is the selected track, forward immediately.
-
-5. If the arriving track is not selected, cache it and start selection timer.
-
-6. If selected track arrives before timeout, forward it and stop timer.
-
-7. If timeout expires, remove that track from candidates and re-evaluate selection.
-
-## Approach 2: Track Filter with Publisher Properties {#approach-trackfilter}
-
-The subscriber uses SUBSCRIBE with a TRACK_FILTER parameter. The publisher advertises
-track properties that the relay uses for selection.
-
-### Publisher Track Properties
-
-Publishers advertise metadata on each track to enable relay-based selection. The
-publisher_priority property defined in [MOQT] Section 11.3 indicates relative quality
-ordering where lower values indicate higher priority (higher quality).
-
-~~~
-PUBLISH track=(video, 1080p)
-  Track Properties:
-    THROUGHPUT = 5000 (kbps)
-    publisher_priority = 1 (highest quality)
-
-PUBLISH track=(video, 720p)
-  Track Properties:
-    THROUGHPUT = 2000 (kbps)
-    publisher_priority = 2
-
-PUBLISH track=(video, 480p)
-  Track Properties:
-    THROUGHPUT = 800 (kbps)
-    publisher_priority = 3 (lowest quality)
-~~~
-
-* **THROUGHPUT**: Bandwidth requirement in kbps
-* **publisher_priority**: Relative quality ordering per [MOQT] (lower = higher quality)
-
-### Client Workflow
-
-Client sends a single SUBSCRIBE with track filter:
-
-~~~
-Client                                  Relay
+  |  // Switching Set 2: Sideline Camera  |
   |                                       |
-  |  SUBSCRIBE                            |
-  |    Track Filter = {                   |
-  |      Property Type = THROUGHPUT,      |
-  |      MaxTracksSelected = 1            |
-  |    }                                  |
-  |    SWITCHING-SET-ASSIGNMENT{id=1}     |
-  |    SUBSCRIBER_PRIORITY=10             |
-  |    DTS-ACTIVATION{id=1, state=1}      |
+  |  SUBSCRIBE track=sideline/720p        |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=1500,           |
+  |      fraction=4, activate=0}          |
   |-------------------------------------->|
   |                                       |
-  |  (Relay discovers tracks via filter,  |
-  |   selects based on THROUGHPUT prop)   |
+  |  SUBSCRIBE track=sideline/360p        |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=400,            |
+  |      fraction=4, activate=1}          |
+  |-------------------------------------->|
+  |                                       |
+  |  (Relay activates DTS for set 2)      |
+  |                                       |
+  |  Result: Two switching sets           |
+  |    Set 1 (main):     60% bandwidth    |
+  |    Set 2 (sideline): 40% bandwidth    |
   |                                       |
 ~~~
 
-The client specifies:
-- **Track Filter**: Selects tracks with THROUGHPUT property, limit to 1 active track
-- **SUBSCRIBER_PRIORITY**: For bandwidth allocation across multiple switching sets (lower = higher priority)
+**Modifying the switching set**:
 
-### Relay Workflow
+- **Add track**: Send SUBSCRIBE with SWITCHING-SET-ASSIGNMENT pointing to existing set
+- **Remove track**: Unsubscribe from that track
+- **Disable DTS**: Send REQUEST_UPDATE with activate=0
+- **Resume DTS**: Send REQUEST_UPDATE with activate=1
 
-1. Relay receives SUBSCRIBE with track filter and DTS parameters.
+## Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER {#method-trackfilter}
 
-2. Relay identifies all tracks matching the filter (tracks with THROUGHPUT property).
+This method is used when the subscriber wants to receive tracks from multiple sources
+within a namespace but does not know in advance which specific sources to subscribe to.
+Instead, the subscriber specifies selection criteria via TRACK_FILTER, and the relay
+dynamically selects sources based on the specified property.
 
-3. Using publisher-advertised THROUGHPUT values, relay applies the adaptation algorithm
-   ({{relay-adaptation-algorithm}}) to select the best track for available bandwidth.
+The relay monitors all tracks within the namespace and selects the top-N sources ranked
+by the specified property (e.g., LOUDNESS for voice activity detection, VIEWCOUNT for
+popularity). For each selected source, the relay creates a switching set containing all
+quality renditions from that source.
 
-4. Relay uses publisher_priority to break ties (prefer lower value = higher quality).
+When the relay selects a source, it sends a PUBLISH message to the subscriber. The
+subscriber responds with PUBLISH_OK containing SWITCHING-SET-ASSIGNMENT to specify the
+bandwidth allocation for that source's switching set. This allows the subscriber to
+assign different fractions to different sources based on application-level priority.
 
-5. At each group boundary, relay re-evaluates selection based on current bandwidth.
+The selection is dynamic: as property values change, sources may be added or removed
+from the top-N set. These changes MAY occur at any time, not only at group boundaries.
+When the selection changes:
 
-## Example: Adaptive Bitrate Streaming {#example-abr}
+1. For a newly selected source: Relay sends PUBLISH, subscriber responds with
+   PUBLISH_OK + SWITCHING-SET-ASSIGNMENT
+2. For a deselected source: Relay sends REQUEST_UPDATE with fwd=0
 
-A live video stream is encoded at three quality levels. The subscriber wants the relay
-to automatically select the best quality based on available bandwidth.
-
-**Publisher Setup**:
-
-~~~
-Track: (live-stream, video, 1080p)  ->  5000 kbps, publisher_priority=1
-Track: (live-stream, video, 720p)   ->  2000 kbps, publisher_priority=2
-Track: (live-stream, video, 480p)   ->   800 kbps, publisher_priority=3
-~~~
-
-**Using Approach 1 (Explicit SUBSCRIBE)**:
-
-~~~
-SUBSCRIBE (live-stream, video, 1080p)
-  SWITCHING-SET-ASSIGNMENT{id=1, throughput=5000, timeout=100}
-  SUBSCRIBER_PRIORITY=10
-
-SUBSCRIBE (live-stream, video, 720p)
-  SWITCHING-SET-ASSIGNMENT{id=1, throughput=2000, timeout=100}
-  SUBSCRIBER_PRIORITY=10
-
-SUBSCRIBE (live-stream, video, 480p)
-  SWITCHING-SET-ASSIGNMENT{id=1, throughput=800, timeout=100}
-  SUBSCRIBER_PRIORITY=10
-  DTS-ACTIVATION{id=1, state=1}
-~~~
-
-**Using Approach 2 (Track Filter)**:
+The subscriber is responsible for reaching a decodable state when selection changes,
+either via new group request or relay cache.
 
 ~~~
-SUBSCRIBE
-  Track Filter = {Property=THROUGHPUT, MaxTracksSelected=1}
-  SWITCHING-SET-ASSIGNMENT{id=1}
-  SUBSCRIBER_PRIORITY=10
-  DTS-ACTIVATION{id=1, state=1}
+TRACK_FILTER {
+  Property Type (vi64),       // e.g., LOUDNESS for voice activity
+  MaxTracksSelected (vi64),   // Number of sources to select
+  Timeout (vi64),
+  [Default Set rank (8)]      // Optional: default rank for created sets (default=1)
+}
 ~~~
 
-**Relay Behavior** (both approaches):
-
-With estimated bandwidth of 3 Mbps, relay applies {{relay-adaptation-algorithm}}:
-
-1. Evaluate renditions: 5000 > 3000 (skip), 2000 <= 3000 (select), 800 <= 3000 (candidate)
-2. Select highest quality that fits: 720p @ 2000 kbps
-3. Forward 720p groups, discard 1080p and 480p groups
-
 ~~~
-+---------------------------------------------------------------------+
-|                  ABR: Bandwidth = 3 Mbps                            |
-+---------------------------------------------------------------------+
-|                                                                     |
-|  Available Renditions:                                              |
-|  +----------+  +----------+  +----------+                           |
-|  |  1080p   |  |   720p   |  |   480p   |                           |
-|  | 5000kbps |  | 2000kbps |  |  800kbps |                           |
-|  |  prio=1  |  |  prio=2  |  |  prio=3  |                           |
-|  +----+-----+  +----+-----+  +----+-----+                           |
-|       |             |             |                                 |
-|       X        [SELECTED]         |                                 |
-|  (exceeds BW)       |        (lower quality)                        |
-|                     v                                               |
-|              +------------+                                         |
-|              | Forward    |                                         |
-|              | 720p@2Mbps |                                         |
-|              +------------+                                         |
-|                                                                     |
-+---------------------------------------------------------------------+
-~~~
-
-# Multiple Switching Sets {#multiple-switching-sets}
-
-Multiple switching sets are used when a subscriber receives several independent streams,
-each with its own quality renditions. The relay must allocate bandwidth across all sets
-based on their subscriber_priority values (lower = higher priority per [MOQT] Section 9.3.5).
-
-## Using SUBSCRIBE_NAMESPACE with Track Filtering
-
-For multiple switching sets, SUBSCRIBE_NAMESPACE with track filters provides a scalable
-approach. Each namespace subscription represents one switching set.
-
-### Publisher Track Properties
-
-Publishers advertise properties that enable both quality selection within a set and
-priority ordering across sets. The publisher_priority property per [MOQT] indicates
-relative quality (lower value = higher quality):
-
-~~~
-PUBLISH track=(conf, alice, video, 1080p)
-  THROUGHPUT = 2000, publisher_priority = 1
-
-PUBLISH track=(conf, alice, video, 720p)
-  THROUGHPUT = 800, publisher_priority = 2
-
-PUBLISH track=(conf, alice, video, 360p)
-  THROUGHPUT = 400, publisher_priority = 3
+Subscriber                              Relay
+  |                                       |
+  |  SUBSCRIBE_NAMESPACE (conf, video)    |
+  |    TRACK_FILTER{LOUDNESS, max=4}      |
+  |-------------------------------------->|
+  |                                       |
+  |  (Relay selects top 4 by LOUDNESS:    |
+  |   alice, bob, carol, dave)            |
+  |                                       |
+  |  PUBLISH (alice, *)                   |
+  |<--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=2000,           |
+  |      fraction=4, activate=0}          |
+  |-------------------------------------->|
+  |                                       |
+  |  PUBLISH (bob, *)                     |
+  |<--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=2000,           |
+  |      fraction=2, activate=0}          |
+  |-------------------------------------->|
+  |                                       |
+  |  ... (carol, dave similarly)          |
+  |                                       |
+  |  (Relay creates 4 switching sets      |
+  |   with subscriber-assigned fractions) |
+  |                                       |
 ~~~
 
-### Client Workflow
+The subscriber assigns fraction values in PUBLISH_OK to control bandwidth allocation.
+Active speaker (alice) gets fraction=4 (40%), others get fraction=2 (20% each).
 
-Client sends SUBSCRIBE_NAMESPACE for each participant with subscriber_priority indicating
-relative importance (lower value = higher priority):
+## Dynamic Updates
 
-~~~
-SUBSCRIBE_NAMESPACE (conf, alice, video)
-  Track Filter = {Property=THROUGHPUT, MaxTracksSelected=1}
-  SWITCHING-SET-ASSIGNMENT{id=1}
-  SUBSCRIBER_PRIORITY=1   // Active speaker (highest priority)
-
-SUBSCRIBE_NAMESPACE (conf, bob, video)
-  Track Filter = {Property=THROUGHPUT, MaxTracksSelected=1}
-  SWITCHING-SET-ASSIGNMENT{id=2}
-  SUBSCRIBER_PRIORITY=100
-
-SUBSCRIBE_NAMESPACE (conf, carol, video)
-  Track Filter = {Property=THROUGHPUT, MaxTracksSelected=1}
-  SWITCHING-SET-ASSIGNMENT{id=3}
-  SUBSCRIBER_PRIORITY=100
-
-SUBSCRIBE_NAMESPACE (conf, dave, video)
-  Track Filter = {Property=THROUGHPUT, MaxTracksSelected=1}
-  SWITCHING-SET-ASSIGNMENT{id=4}
-  SUBSCRIBER_PRIORITY=100
-  DTS-ACTIVATION{id=0, state=1}  // Activate all sets
-~~~
-
-### Updating Priorities
-
-When conditions change (e.g., active speaker changes), client sends REQUEST_UPDATE
-to adjust subscriber_priority:
+Subscribers can update switching set parameters at any time via REQUEST_UPDATE:
 
 ~~~
-REQUEST_UPDATE (subscription for alice)
-  SUBSCRIBER_PRIORITY=100   // Alice no longer speaking
+// Change active speaker from alice to bob
+REQUEST_UPDATE (alice subscription)
+  SWITCHING-SET-ASSIGNMENT{id=1, fraction=2}  // demote alice
 
-REQUEST_UPDATE (subscription for bob)
-  SUBSCRIBER_PRIORITY=1     // Bob is now active speaker
+REQUEST_UPDATE (bob subscription)
+  SWITCHING-SET-ASSIGNMENT{id=2, fraction=4}  // promote bob
 ~~~
 
-### Relay Workflow
+# Relay Behavior {#relay-behavior}
 
-1. Relay maintains multiple switching sets, each with its subscriber_priority.
+This section defines the unified relay behavior for Dynamic Track Switching. The relay
+processes switching sets identically regardless of how they were created (individual
+SUBSCRIBE or SUBSCRIBE_NAMESPACE).
 
-2. At each group boundary, relay applies the adaptation algorithm
-   ({{relay-adaptation-algorithm}}) to allocate bandwidth across all sets.
+## Processing Switching Sets
 
-3. For each set, relay selects the best rendition using publisher_priority property.
+The relay maintains state for each switching set:
 
-4. Relay responds to subscriber_priority updates by re-running allocation at next group boundary.
+- Set of subscriptions belonging to the switching set
+- Set throughput fraction (N/10 of connection bandwidth)
+- Activation state (active or pending)
+- Currently selected track (Forward state = 1)
 
-## Example: Video Conferencing
+When the relay receives a subscription with SWITCHING-SET-ASSIGNMENT:
 
-### 2x2 Grid Layout
+1. Add subscription to the specified switching set (create set if needed)
+2. Set Forward state to 0 for the new subscription
+3. Store the Set throughput fraction as a property of the set
+4. If Activate switching = 1, begin active track selection
 
-Four participants displayed equally. All have equal subscriber_priority.
+## Bandwidth Allocation
 
-**Configuration**:
+On a periodic bandwidth estimate update or other selection trigger (e.g., new group
+boundary), the relay:
 
-~~~
-Participants: Alice, Bob, Carol, Dave
-Each has renditions: 1080p (2000kbps), 720p (800kbps), 360p (400kbps)
-subscriber_priority: All equal at 100 (equal priority)
-Available bandwidth: 6 Mbps
-~~~
+1. **Measures B_total**: Estimate downstream bandwidth capacity
 
-**Bandwidth Allocation** (see {{relay-adaptation-algorithm}}):
+2. **Allocates per set**: For each switching set with fraction N:
+   - B_set = B_total × N / 10
 
-~~~
-+----------------------------------------------------------------------+
-|                    2x2 Grid: 6 Mbps Available                        |
-+----------------------------------------------------------------------+
-|                                                                      |
-|  Equal priority allocation: 6000 / 4 = 1500 kbps each                |
-|                                                                      |
-|  +---------------+  +---------------+  +---------------+  +--------+ |
-|  |    Alice      |  |     Bob       |  |    Carol      |  |  Dave  | |
-|  |   sp=100      |  |    sp=100     |  |    sp=100     |  | sp=100 | |
-|  |  1500 kbps    |  |   1500 kbps   |  |   1500 kbps   |  |1500kbps| |
-|  |  -> 720p      |  |   -> 720p     |  |   -> 720p     |  | -> 720p| |
-|  |    (800)      |  |     (800)     |  |     (800)     |  |  (800) | |
-|  +---------------+  +---------------+  +---------------+  +--------+ |
-|                                                                      |
-|  (sp = subscriber_priority, equal values = equal bandwidth share)    |
-|  Total used: 3200 kbps    Headroom: 2800 kbps                        |
-|  After redistribution: All remain at 720p (no upgrade fits)          |
-|                                                                      |
-|  +--------------+  +--------------+                                  |
-|  |   Alice      |  |    Bob       |                                  |
-|  |   720p       |  |    720p      |                                  |
-|  +--------------+  +--------------+                                  |
-|  +--------------+  +--------------+                                  |
-|  |   Carol      |  |    Dave      |                                  |
-|  |   720p       |  |    720p      |                                  |
-|  +--------------+  +--------------+                                  |
-|                                                                      |
-+----------------------------------------------------------------------+
-~~~
+3. **Selects rendition**: Within each set, select the highest-quality rendition
+   with throughput threshold <= B_set
 
-### Top-4 with Active Speaker
-
-Active speaker gets priority, others share remaining bandwidth.
-
-**Configuration**:
+4. **Forwards groups**: Set Forward state = 1 for selected track, 0 for others
 
 ~~~
-Alice (active speaker): subscriber_priority = 1 (highest priority)
-Bob, Carol, Dave: subscriber_priority = 100 each
-Available bandwidth: 6 Mbps
+┌──────────────────────────────────────────────────────────────────────┐
+│                     Relay Adaptation Algorithm                       │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│                    +---------------------------+                     │
+│                    | 1. Measure B_total        |                     │
+│                    +-------------+-------------+                     │
+│                                  |                                   │
+│                                  v                                   │
+│                    +---------------------------+                     │
+│                    | 2. For each switching set |                     │
+│                    |    B_set = B_total × N/10 |                     │
+│                    +-------------+-------------+                     │
+│                                  |                                   │
+│                                  v                                   │
+│                    +---------------------------+                     │
+│                    | 3. Select best rendition  |                     │
+│                    |    where throughput<=B_set|                     │
+│                    +-------------+-------------+                     │
+│                                  |                                   │
+│                                  v                                   │
+│                    +---------------------------+                     │
+│                    | 4. Forward selected groups|                     │
+│                    +---------------------------+                     │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ~~~
 
-**Bandwidth Allocation**:
+## Allocation Modes
 
-The relay allocates bandwidth inversely proportional to subscriber_priority
-(lower priority value = higher bandwidth share):
+Bandwidth allocation across multiple switching sets is determined by the Set rank parameter:
 
-~~~
-+----------------------------------------------------------------------+
-|                 Top-4 Active Speaker: 6 Mbps                         |
-+----------------------------------------------------------------------+
-|                                                                      |
-|  Priority-based allocation (lower sp = more bandwidth)               |
-|                                                                      |
-|  +---------------------------+  +--------+  +--------+  +--------+   |
-|  |         Alice             |  |  Bob   |  | Carol  |  |  Dave  |   |
-|  |        sp=1               |  |  sp=100|  |  sp=100|  |  sp=100|   |
-|  |   ~52% = 3158 kbps        |  |947 kbps|  |947 kbps|  |947 kbps|   |
-|  |      -> 1080p (2000)      |  |->720p  |  |->720p  |  |->720p  |   |
-|  +---------------------------+  +--------+  +--------+  +--------+   |
-|                                                                      |
-|  Total: 2000 + 800 + 800 + 800 = 4400 kbps                           |
-|                                                                      |
-|  +-----------------------------+  +----------+  +----------+         |
-|  |                             |  |          |  |          |         |
-|  |     Alice (1080p)           |  |Bob (720p)|  |Carol     |         |
-|  |     Active Speaker          |  |          |  |(720p)    |         |
-|  |                             |  +----------+  +----------+         |
-|  |                             |  +----------+                       |
-|  |                             |  |Dave      |                       |
-|  |                             |  |(720p)    |                       |
-|  +-----------------------------+  +----------+                       |
-|                                                                      |
-+----------------------------------------------------------------------+
-~~~
+### Equal Allocation (Default)
 
-### DTS with Bandwidth Reduction
-
-Same configuration, but bandwidth drops to 3 Mbps.
-
-**Bandwidth Allocation**:
+When all sets have the same rank (default rank=1), each set receives bandwidth proportional
+to its fraction:
 
 ~~~
-+----------------------------------------------------------------------+
-|              Active Speaker: Bandwidth Drops to 3 Mbps               |
-+----------------------------------------------------------------------+
-|                                                                      |
-|  BEFORE (6 Mbps):  Alice@1080p, Bob@720p, Carol@720p, Dave@720p      |
-|                                                                      |
-|                         | BW DROP |                                  |
-|                         v         v                                  |
-|                                                                      |
-|  AFTER (3 Mbps):                                                     |
-|                                                                      |
-|  +---------------------------+  +--------+  +--------+  +--------+   |
-|  |         Alice             |  |  Bob   |  | Carol  |  |  Dave  |   |
-|  |        w=100              |  |  w=30  |  |  w=30  |  |  w=30  |   |
-|  |   52.6% = 1579 kbps       |  |474 kbps|  |474 kbps|  |474 kbps|   |
-|  |      -> 720p (800)        |  |->360p  |  |->360p  |  |->360p  |   |
-|  +---------------------------+  +--------+  +--------+  +--------+   |
-|                                                                      |
-|  Total: 800 + 400 + 400 + 400 = 2000 kbps                            |
-|                                                                      |
-|  Priority preserved: Alice (720p) > Bob/Carol/Dave (360p)            |
-|                                                                      |
-+----------------------------------------------------------------------+
+B_set_i = B_total × fraction_i / 10
 ~~~
 
-## Example: Cloud Gaming (Non-Conferencing)
+All sets degrade proportionally when bandwidth is constrained.
 
-Cloud gaming with adaptive game video and high-priority HUD overlay.
+### Set-Rank Mode
 
-**Configuration**:
+When sets have different rank values, sets are processed in rank order (lower value =
+higher priority). Each set selects the best rendition that fits within the remaining
+bandwidth before moving to the next set. This ensures higher-ranked sets receive their
+optimal rendition before lower-ranked sets consume bandwidth.
 
-~~~
-Game video: 4 renditions (8000/4000/2000/1000 kbps), subscriber_priority = 100
-HUD overlay: 1 rendition (200 kbps), subscriber_priority = 1 (high priority)
-Available bandwidth: 10 Mbps
-~~~
-
-**Bandwidth Allocation**:
+## Implementation Pseudocode
 
 ~~~
-+----------------------------------------------------------------------+
-|                    Cloud Gaming: 10 Mbps                             |
-+----------------------------------------------------------------------+
-|                                                                      |
-|  Priority allocation (lower subscriber_priority = higher priority):  |
-|  HUD (priority=1): allocated first -> uses 200 kbps                  |
-|  Game (priority=100): remaining -> 9800 kbps available               |
-|                                                                      |
-|  Game selects: 8000 kbps (4K)                                        |
-|                                                                      |
-|  +----------------------------------------------------------------+  |
-|  |  +----------------------------------------------------------+  |  |
-|  |  |                                                          |  |  |
-|  |  |              GAME VIDEO (4K @ 8000 kbps)                  |  |  |
-|  |  |                                                          |  |  |
-|  |  +----------------------------------------------------------+  |  |
-|  |  +-----------------+                    +-----------------+    |  |
-|  |  | Health: ####... |  HUD (200 kbps)    |  Ammo: 30/120   |    |  |
-|  |  +-----------------+  sub_priority=1    +-----------------+    |  |
-|  +----------------------------------------------------------------+  |
-|                                                                      |
-|  At 5 Mbps: HUD stays 200 kbps, Game drops to 4000 kbps (1080p)      |
-|                                                                      |
-+----------------------------------------------------------------------+
+function select_renditions(B_total, sets[]):
+
+  if all sets have same rank:  // Equal allocation
+    for each set in sets:
+      B_set = B_total * set.fraction / 10
+      set.selected = first rendition where throughput <= B_set
+
+  else:  // Set-Rank mode
+    remaining = B_total
+    sort sets by rank (ascending)
+    for each set in sets:
+      // Select best rendition that fits in remaining bandwidth
+      set.selected = NONE
+      for each rendition in set.renditions (highest to lowest quality):
+        if rendition.throughput <= remaining:
+          set.selected = rendition
+          remaining -= rendition.throughput
+          break
+
+  return sets[].selected
 ~~~
-
-The low subscriber_priority (1) ensures HUD is prioritized. Since HUD has only one
-rendition, it uses minimal bandwidth and remaining capacity goes to game video.
-
-# Relay Adaptation Algorithm {#relay-adaptation-algorithm}
-
-This section defines the relay adaptation algorithm for Dynamic Track Switching. The algorithm
-is agnostic to whether there is a single switching set or multiple switching sets—it handles
-both cases uniformly through priority-based bandwidth allocation using subscriber_priority.
-
-## Algorithm Overview
-
-The relay executes this algorithm at each group boundary or when bandwidth estimates change:
-
-1. **Measure available bandwidth**: Maintain an estimate of downstream bandwidth capacity, B_total.
-
-2. **Calculate priority-based allocation**: Order switching sets by subscriber_priority
-   (lower value = higher priority). Allocate bandwidth starting with highest priority sets.
-   For sets with equal priority, divide bandwidth equally among them.
-
-   For a single switching set, it receives B_total.
-
-3. **Select rendition per switching set**: Within each set, select the highest-quality
-   rendition with throughput requirement <= B_i. If no rendition fits, the set receives
-   no bandwidth for this group.
-
-4. **Redistribute unused bandwidth**: If a set cannot use its full allocation (e.g.,
-   selected rendition < B_i, or no rendition fits), redistribute unused bandwidth
-   proportionally to other sets and re-evaluate their rendition selection.
-
-5. **Forward selected groups**: Forward groups from the selected rendition of each set.
-
-~~~
-+-----------------------------------------------------------------------------+
-|                     Relay Adaptation Algorithm                              |
-+-----------------------------------------------------------------------------+
-                                    |
-                                    v
-                    +-------------------------------+
-                    |  1. Measure B_total           |
-                    |     (downstream bandwidth)    |
-                    +---------------+---------------+
-                                    |
-                                    v
-                    +-------------------------------+
-                    |  2. Calculate allocation      |
-                    |     per switching set         |
-                    |     (order by sub_priority,   |
-                    |      lower = higher priority) |
-                    +---------------+---------------+
-                                    |
-                                    v
-                    +-------------------------------+
-                    |  3. Select rendition per set  |
-                    |     Pick highest quality      |
-                    |     where throughput <= B_i   |
-                    +---------------+---------------+
-                                    |
-                                    v
-                    +-------------------------------+
-                    |  4. Redistribute unused BW    |
-                    |     Reallocate proportionally |
-                    |     Re-evaluate selections    |
-                    +---------------+---------------+
-                                    |
-                                    v
-                    +-------------------------------+
-                    |  5. Forward selected groups   |
-                    +---------------+---------------+
-                                    |
-                                    v
-                         +---------------------+
-                         |  Wait for next      |
-                         |  group boundary or  |<--------+
-                         |  BW change          |         |
-                         +----------+----------+         |
-                                    |                    |
-                                    +--------------------+
-~~~
-
-## Single vs Multiple Switching Sets
-
-The algorithm handles both cases identically:
-
-**Single Switching Set** (e.g., ABR):
-- One set receives B_total
-- Select best rendition that fits in B_total
-
-**Multiple Switching Sets** (e.g., video conferencing):
-- N sets with subscriber_priority values p_1, p_2, ..., p_N
-- Sets ordered by priority (lower value = higher priority)
-- Higher priority sets receive bandwidth allocation first
-- Redistribution ensures efficient bandwidth utilization
-
-## High-Priority Single-Rendition Streams
-
-Streams with only one rendition (e.g., HUD, telemetry) use the same algorithm:
-- Assign low subscriber_priority value (high priority) to ensure bandwidth allocation
-- The single rendition either fits or doesn't
-- Remaining bandwidth is allocated to lower priority sets
-
-This approach avoids special "guaranteed bandwidth" handling while still prioritizing
-critical streams through the subscriber_priority mechanism.
 
 ## Bandwidth Estimation
 
-The relay SHOULD maintain a bandwidth estimate that:
-- Is smoothed to avoid oscillation from transient measurements
-- Accounts for the maximum group duration of tracks being switched
-- Is updated at least once per group boundary
-- May use QUIC congestion control signals when available
+The relay MUST maintain a bandwidth estimate (B_total) for each downstream subscriber.
+This estimate is obtained periodically from the QUIC stack (e.g., congestion window,
+pacing rate, smoothed RTT) and MAY be supplemented by external sources such as SCONE
+{{?I-D.ietf-scone-protocol}} or application-level feedback. The estimate drives rendition
+selection decisions for all switching sets associated with that subscriber
 
-## Selection Timer
+# Examples {#examples}
 
-When the preferred track's group has not arrived but a lower-priority track's group has:
+This section provides focused examples demonstrating relay behavior in common
+scenarios. Each example references a detailed use case in {{usecase-appendix}}
+that includes architecture diagrams and extended requirements.
 
-1. Relay caches the lower-priority group
-2. Starts selection timer based on the preferred track's Selection time limit
-3. If preferred group arrives before timeout, forward it
-4. If timeout expires, remove preferred track from candidates and re-select
+## Example: 2-Track ABR
+
+This example demonstrates the simplest DTS scenario: a single switching set with two
+quality renditions from one source. See {{usecase-abr}} for the full use case
+description and architecture.
+
+**Setup**: Video at 1080p (2000 kbps) and 480p (500 kbps), fraction=10
+
+The subscriber creates a single switching set by sending two SUBSCRIBE messages with
+the same set ID. The first subscription (1080p) sets activate=0 to indicate more tracks
+will follow. The second subscription (480p) sets activate=1 to signal the set is complete.
+Since this is the only switching set, fraction=10 allocates 100% of bandwidth to it.
+
+~~~
+Subscriber subscribes to both tracks:
+  SUBSCRIBE (video, 1080p) SWITCHING-SET-ASSIGNMENT{id=1, throughput=2000, fraction=10}
+  SUBSCRIBE (video, 480p)  SWITCHING-SET-ASSIGNMENT{id=1, throughput=500, activate=1}
+~~~
+
+Once the relay receives the second subscription with activate=1, it begins active track
+selection. The relay evaluates the bandwidth estimate and selects the highest-quality
+rendition whose throughput threshold fits within the allocated bandwidth.
+
+When bandwidth is 3 Mbps, the relay calculates B_set = 3000 kbps. The 1080p track
+requires 2000 kbps, which fits, so the relay selects 1080p and sets Forward=1 for that
+track. The 480p track gets Forward=0.
+
+~~~
+Relay behavior at 3 Mbps:
+  B_set = 3000 × 10/10 = 3000 kbps
+  Select: 2000 <= 3000 → 1080p
+  Forward: 1080p groups
+~~~
+
+If bandwidth drops to 1 Mbps, the relay recalculates B_set = 1000 kbps. The 1080p track
+(2000 kbps) no longer fits, so the relay switches to 480p (500 kbps). At the next group
+boundary, Forward state changes: 1080p gets Forward=0, 480p gets Forward=1.
+
+~~~
+Relay behavior at 1 Mbps:
+  B_set = 1000 × 10/10 = 1000 kbps
+  Select: 2000 > 1000, 500 <= 1000 → 480p
+  Forward: 480p groups
+~~~
+
+~~~
+┌──────────────────────────────────────────────────────────────────────┐
+│                      2-Track ABR Example                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Bandwidth = 3 Mbps           Bandwidth = 1 Mbps                    │
+│                                                                      │
+│   ┌────────┐  ┌────────┐       ┌────────┐  ┌────────┐                │
+│   │ 1080p  │  │  480p  │       │ 1080p  │  │  480p  │                │
+│   │ 2 Mbps │  │ 500kbps│       │ 2 Mbps │  │ 500kbps│                │
+│   └───┬────┘  └────────┘       └────────┘  └───┬────┘                │
+│       │                                        │                     │
+│  [SELECTED]                               [SELECTED]                 │
+│       │                                        │                     │
+│       v                                        v                     │
+│   Forward                                  Forward                   │
+│   1080p                                    480p                      │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+~~~
+
+## Example: 2x2 Grid Layout
+
+This example demonstrates multiple switching sets with equal bandwidth allocation. Four
+participants are displayed in a grid layout, each receiving the same share of bandwidth.
+See {{usecase-videoconf}} for the full use case description including active speaker
+priority handling.
+
+**Setup**: Each participant has 720p (800 kbps) and 360p (300 kbps), equal fractions
+
+The subscriber uses SUBSCRIBE_NAMESPACE with TRACK_FILTER to request the top 4 participants.
+The relay selects sources and sends PUBLISH for each. The subscriber responds with PUBLISH_OK
+containing SWITCHING-SET-ASSIGNMENT with fraction=2 for each, allocating 20% of bandwidth
+per participant. The remaining 20% provides headroom for audio and protocol overhead.
+
+~~~
+Subscriber                              Relay
+  |                                       |
+  |  SUBSCRIBE_NAMESPACE (conf, video)    |
+  |    TRACK_FILTER{LOUDNESS, max=4}      |
+  |-------------------------------------->|
+  |                                       |
+  |  PUBLISH (alice, *)                   |
+  |<--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, fraction=2}                |
+  |-------------------------------------->|
+  |                                       |
+  |  PUBLISH (bob, *)                     |
+  |<--------------------------------------|
+  |  PUBLISH_OK                           |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, fraction=2}                |
+  |-------------------------------------->|
+  |                                       |
+  |  ... (carol id=3, dave id=4 similarly)|
+  |                                       |
+~~~
+
+With equal fractions and equal rank (default), the relay uses equal allocation mode. All
+participants receive the same quality level, and when bandwidth drops, all degrade together.
+
+~~~
+At 4 Mbps total:
+  B_set = 4000 × 2/10 = 800 kbps per set
+  All sets: 800 <= 800 → select 720p
+  Forward: alice@720p, bob@720p, carol@720p, dave@720p
+
+At 2 Mbps total:
+  B_set = 2000 × 2/10 = 400 kbps per set
+  All sets: 800 > 400, 300 <= 400 → select 360p
+  Forward: alice@360p, bob@360p, carol@360p, dave@360p
+~~~
+
+~~~
+┌──────────────────────────────────────────────────────────────────────┐
+│                      2x2 Grid Layout                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  4 Mbps: All participants at 720p                                    │
+│                                                                      │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Alice (720p)   │  │   Bob (720p)    │                            │
+│  │  fraction=2     │  │  fraction=2     │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Carol (720p)   │  │  Dave (720p)    │                            │
+│  │  fraction=2     │  │  fraction=2     │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│                                                                      │
+│  2 Mbps: All participants degrade equally to 360p                    │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+~~~
+
+## Example: VR Headset / Foveated Rendering
+
+This example demonstrates dynamic bandwidth reallocation based on user interaction. In
+foveated rendering, the tile where the user is looking (gaze tile) receives higher quality
+than peripheral tiles. As the user's gaze moves, bandwidth allocation shifts in real-time.
+See {{usecase-vr}} for the full use case description including multi-layer VR environments.
+
+**Setup**: 5 tiles, each with hi (1 Mbps) and lo (200 kbps). Gaze tile gets fraction=4,
+peripheral tiles get fraction=1 each.
+
+The subscriber uses individual SUBSCRIBE messages since the tile layout is known in advance.
+Each tile becomes a separate switching set with two renditions (hi and lo). The gaze tile
+initially receives fraction=4 (40% of bandwidth), while each peripheral tile receives
+fraction=1 (10% each), leaving 20% headroom.
+
+~~~
+Subscriber                              Relay
+  |                                       |
+  |  // Subscribe to all 5 tiles          |
+  |  SUBSCRIBE (tile1, hi)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=1000, fraction=1}|
+  |-------------------------------------->|
+  |  SUBSCRIBE (tile1, lo)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=200, activate=1}|
+  |-------------------------------------->|
+  |                                       |
+  |  ... (tiles 2, 4, 5 similarly, f=1)   |
+  |                                       |
+  |  // Tile 3 is gaze tile, gets f=4    |
+  |  SUBSCRIBE (tile3, hi)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=3, throughput=1000, fraction=4}|
+  |-------------------------------------->|
+  |  SUBSCRIBE (tile3, lo)                |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=3, throughput=200, activate=1}|
+  |-------------------------------------->|
+  |                                       |
+~~~
+
+At 3 Mbps, the relay allocates bandwidth based on fractions. The gaze tile (fraction=4)
+gets 1200 kbps and selects hi quality. Peripheral tiles (fraction=1) get 300 kbps each
+and select lo quality.
+
+~~~
+At 3 Mbps total:
+  Gaze tile (fraction=4):    B = 3000 × 4/10 = 1200 kbps → hi (1 Mbps)
+  Peripheral (fraction=1):   B = 3000 × 1/10 = 300 kbps  → lo (200 kbps)
+~~~
+
+When the user's gaze shifts from tile 3 to tile 5, the subscriber sends REQUEST_UPDATE
+messages to swap the fractions. The relay immediately reallocates bandwidth, promoting
+tile 5 to hi quality and demoting tile 3 to lo quality.
+
+~~~
+When gaze shifts from tile 3 to tile 5:
+  REQUEST_UPDATE (tile 3) fraction=1  // demote
+  REQUEST_UPDATE (tile 5) fraction=4  // promote
+
+Relay immediately reallocates:
+  Tile 5: 1200 kbps → hi
+  Tile 3: 300 kbps → lo
+~~~
+
+~~~
+┌──────────────────────────────────────────────────────────────────────┐
+│                    VR Foveated Rendering                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  360° View with Gaze at Tile 3:                                      │
+│                                                                      │
+│  ┌──────┐ ┌──────┐ ┌──────────┐ ┌──────┐ ┌──────┐                    │
+│  │Tile 1│ │Tile 2│ │  Tile 3  │ │Tile 4│ │Tile 5│                    │
+│  │  lo  │ │  lo  │ │   hi     │ │  lo  │ │  lo  │                    │
+│  │ f=1  │ │ f=1  │ │  f=4     │ │ f=1  │ │ f=1  │                    │
+│  └──────┘ └──────┘ └──────────┘ └──────┘ └──────┘                    │
+│                      [GAZE]                                          │
+│                                                                      │
+│  Gaze shifts to Tile 5 → REQUEST_UPDATE to swap fractions            │
+│                                                                      │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────────┐                    │
+│  │Tile 1│ │Tile 2│ │Tile 3│ │Tile 4│ │  Tile 5  │                    │
+│  │  lo  │ │  lo  │ │  lo  │ │  lo  │ │   hi     │                    │
+│  │ f=1  │ │ f=1  │ │ f=1  │ │ f=1  │ │  f=4     │                    │
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────────┘                    │
+│                                         [GAZE]                       │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+~~~
+
+## Example: Live Sports with Protected Main Camera
+
+This example demonstrates Set-Rank mode where one stream is protected during bandwidth
+degradation. A live sports broadcast has a main camera that must maintain quality, while
+a secondary replay camera can degrade if bandwidth is constrained.
+
+**Setup**: Main camera with 1080p (3 Mbps) and 480p (800 kbps), rank=1. Replay camera
+with 720p (1.5 Mbps) and 360p (400 kbps), rank=2.
+
+The subscriber uses individual SUBSCRIBE to create two switching sets with different
+ranks. The main camera (rank=1) has higher priority than the replay camera (rank=2).
+When bandwidth is sufficient, both receive their best quality. When bandwidth drops,
+the relay protects the main camera by degrading the replay camera first.
+
+~~~
+Subscriber                              Relay
+  |                                       |
+  |  // Main camera - protected (rank=1)  |
+  |  SUBSCRIBE (main, 1080p)              |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=3000,           |
+  |      fraction=6, rank=1}              |
+  |-------------------------------------->|
+  |  SUBSCRIBE (main, 480p)               |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=1, throughput=800,            |
+  |      fraction=6, rank=1, activate=1}  |
+  |-------------------------------------->|
+  |                                       |
+  |  // Replay camera - best effort (rank=2)|
+  |  SUBSCRIBE (replay, 720p)             |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=1500,           |
+  |      fraction=4, rank=2}              |
+  |-------------------------------------->|
+  |  SUBSCRIBE (replay, 360p)             |
+  |    SWITCHING-SET-ASSIGNMENT{          |
+  |      id=2, throughput=400,            |
+  |      fraction=4, rank=2, activate=1}  |
+  |-------------------------------------->|
+  |                                       |
+~~~
+
+Because the sets have different ranks, the relay uses Set-Rank mode instead of equal
+allocation. It processes sets in rank order, giving higher-ranked sets their optimal
+rendition before allocating remaining bandwidth to lower-ranked sets.
+
+~~~
+At 5 Mbps (sufficient bandwidth):
+  Process rank=1 (main): 3000 <= 5000 → select 1080p, remaining = 2000
+  Process rank=2 (replay): 1500 <= 2000 → select 720p
+  Forward: main@1080p, replay@720p
+
+At 3.5 Mbps (constrained):
+  Process rank=1 (main): 3000 <= 3500 → select 1080p, remaining = 500
+  Process rank=2 (replay): 1500 > 500, 400 <= 500 → select 360p
+  Forward: main@1080p, replay@360p  (main protected, replay degraded)
+
+At 2 Mbps (severely constrained):
+  Process rank=1 (main): 3000 > 2000, 800 <= 2000 → select 480p, remaining = 1200
+  Process rank=2 (replay): 1500 > 1200, 400 <= 1200 → select 360p
+  Forward: main@480p, replay@360p  (both degraded, but main got priority)
+~~~
+
+~~~
+┌──────────────────────────────────────────────────────────────────────┐
+│                    Set-Rank Mode: Protected Stream                   │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  5 Mbps: Both streams at best quality                                │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Main (1080p)   │  │  Replay (720p)  │                            │
+│  │  rank=1         │  │  rank=2         │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│                                                                      │
+│  3.5 Mbps: Main protected, replay degrades first                     │
+│  ┌─────────────────┐  ┌─────────────────┐                            │
+│  │  Main (1080p)   │  │  Replay (360p)  │                            │
+│  │  [PROTECTED]    │  │  [DEGRADED]     │                            │
+│  └─────────────────┘  └─────────────────┘                            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+~~~
+
+# Implementing Client-Side ABR with DTS {#client-side-abr}
+
+This section describes how DTS addresses the requirements that motivated client-side
+Adaptive Bitrate (ABR) proposals such as SWITCH (moq-transport PR #1378).
+
+## Requirements for Adaptive Streaming
+
+Client-side ABR proposals aim to solve the following requirements:
+
+1. **Bandwidth adaptation**: Adjust video quality based on available network capacity
+2. **Seamless switching**: Transition between quality levels without decode errors
+3. **Client control**: Allow subscribers to influence quality selection based on
+   application-specific context (device capabilities, user preferences, power state)
+4. **Low latency switching**: Minimize delay when changing quality levels
+5. **Efficient resource use**: Avoid wasting bandwidth on content that won't be displayed
+
+## The SWITCH Approach
+
+The SWITCH proposal addresses these requirements through explicit client-driven switching:
+
+~~~
+SWITCH Message {
+  From Subscribe Request ID (vi64),
+  To Subscribe Request ID (vi64),
+  To Fetch Request ID (vi64),
+  Track Namespace (..),
+  Track Name (..),
+  Minimum Switching Group ID (vi64),
+  Parameters (..)
+}
+~~~
+
+In the SWITCH model:
+
+- Subscriber maintains a single active subscription at a time
+- Subscriber runs an ABR algorithm to decide when and what to switch to
+- Subscriber sends SWITCH message to request transition to a different track
+- Relay processes switch locally, using FETCH for past content if needed
+- Switch occurs at a common group boundary
+
+## Addressing Requirements with DTS
+
+DTS addresses the same requirements through relay-side switching with subscriber hints:
+
+**Bandwidth adaptation**: The relay continuously monitors downstream bandwidth via the
+QUIC stack and automatically selects the best rendition that fits. The subscriber
+pre-subscribes to all renditions, enabling the relay to switch without round-trips.
+
+**Seamless switching**: The relay switches only at group boundaries where all tracks
+are time-aligned, ensuring decode continuity. The publisher indicates throughput
+thresholds to guide selection.
+
+**Client control**: While the relay makes switching decisions, subscribers can
+influence selection via REQUEST_UPDATE with SWITCHING-SET-ASSIGNMENT:
+
+| Action | Mechanism |
+|--------|-----------|
+| Force rendition | Set throughput=0 (always selected) |
+| Exclude rendition | Set throughput=MAX (never selected) |
+| Freeze selection | Set activate=0 |
+| Resume switching | Set activate=1 |
+| Adjust budget | Change fraction value |
+
+This allows subscribers to set quality floors, lock to specific renditions during
+critical moments, or adjust bandwidth allocation based on application context.
+
+**Low latency switching**: The relay switches at the next group boundary without
+waiting for a client round-trip. Bandwidth changes are detected and acted upon
+immediately.
+
+**Efficient resource use**: The relay sets Forward=0 for non-selected tracks,
+preventing transmission of content that won't be displayed.
+
+## Comparison
+
+| Requirement | SWITCH | DTS |
+|-------------|--------|-----|
+| Bandwidth adaptation | Client ABR algorithm | Relay measures and adapts |
+| Seamless switching | Group boundary alignment | Group boundary alignment |
+| Client control | Full control via SWITCH | Hints via REQUEST_UPDATE |
+| Switch latency | RTT + message processing | Next group boundary |
+| Resource efficiency | Single subscription | Forward=0 for non-selected |
+| Client complexity | ABR algorithm required | Delegate to relay |
+| Multiple streams | Separate logic per stream | Unified via switching sets |
+
+DTS provides equivalent functionality to SWITCH while enabling the relay to make
+faster, better-informed decisions based on direct bandwidth measurement. Subscribers
+retain the ability to influence or override relay decisions when application-specific
+context warrants it.
 
 # Conventions and Definitions
 
@@ -928,12 +1118,12 @@ lower quality).
 
 Each original publisher (participant) encodes their video at multiple quality levels and
 publishes these as a switching set. The end subscriber subscribes to multiple switching
-sets (one per participant) and assigns subscriber_priority values to indicate importance—for
-example, giving the active speaker a lower subscriber_priority (higher priority) than other
-participants. When the active speaker changes, the subscriber adjusts priority values. The
-relay allocates its forwarding capacity across all switching sets according to the
-subscriber-indicated priorities, selecting appropriate quality levels for each participant
-stream to fit within the total available bandwidth.
+sets (one per participant) and assigns Set throughput fraction values to indicate bandwidth
+allocation—for example, giving the active speaker a higher fraction than other participants.
+When the active speaker changes, the subscriber adjusts fraction values. The relay allocates
+its forwarding capacity across all switching sets according to the subscriber-indicated
+fractions, selecting appropriate quality levels for each participant stream to fit within
+the allocated bandwidth.
 
 ~~~
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -954,9 +1144,9 @@ stream to fit within the total available bandwidth.
 │                                                                              │
 │   Allocates bandwidth across multiple switching sets (participants)          │
 │   Selects quality per participant based on:                                  │
-│     - Publisher-indicated rendition priorities                               │
+│     - Subscriber-indicated Set throughput fraction per set                   │
 │     - Total available bandwidth                                              │
-│     - Subscriber-indicated priorities (subscriber_priority)                  │
+│     - Publisher-indicated rendition throughput thresholds                    │
 │                                                                              │
 └─────────────────────────────────────┬────────────────────────────────────────┘
                                       │
@@ -987,8 +1177,9 @@ The original publisher encodes both screen share and camera video at multiple qu
 publishing each content type as a separate switching set with content type indicated in the
 catalog. The end subscriber subscribes to both switching sets, assigning higher weight to
 screen share than camera video based on content type, and may specify a minimum acceptable
-quality (throughput) for the screen share to ensure text remains readable. The relay manages bandwidth allocation between the two content types,
-degrading camera video quality before reducing screen share quality when bandwidth becomes constrained.
+quality (throughput) for the screen share to ensure text remains readable. The relay manages
+bandwidth allocation between the two content types, degrading camera video quality before
+reducing screen share quality when bandwidth becomes constrained.
 
 ~~~
 ┌────────────────────────────────────────────────────────────────────┐
@@ -1045,9 +1236,9 @@ shift between tiles.
 The original publisher encodes each tile at multiple quality levels and publishes them as
 separate switching sets, indicating spatial relationships between tiles. The end subscriber
 subscribes to all tiles within the field of view and as gaze direction changes, assigns
-a lower subscriber_priority (higher priority) to the gaze tile and higher subscriber_priority
-values to peripheral tiles. The relay responds rapidly to these updates, reallocating bandwidth
-to deliver high quality for the gaze tile while maintaining lower quality for surrounding tiles.
+a higher Set throughput fraction to the gaze tile and lower fractions to peripheral tiles.
+The relay responds rapidly to these updates, reallocating bandwidth to deliver high quality
+for the gaze tile while maintaining lower quality for surrounding tiles.
 
 ~~~
 ┌────────────────────────────────────────────────────────────────────┐
@@ -1164,13 +1355,13 @@ based on viewer preferences that may change during the event (e.g., switching fo
 replay angle).
 
 The original publisher (broadcast origin) encodes each camera angle at multiple quality
-levels and publishes a stats overlay as a high-priority stream. All streams share
+levels and publishes a stats overlay as a fixed-bandwidth stream. All streams share
 a common time reference for synchronization. The end subscriber subscribes to desired
-camera angles and the stats overlay, assigning subscriber_priority values to indicate which
-views are most important (lower value = higher priority). During highlights or replays,
-the subscriber dynamically adjusts priorities to shift focus to the relevant camera. The
-relay allocates bandwidth according to subscriber priorities, maintains temporal sync across
-all forwarded streams, and responds promptly to priority changes.
+camera angles and the stats overlay, assigning Set throughput fraction values to indicate
+bandwidth allocation for each view. During highlights or replays, the subscriber dynamically
+adjusts fractions to shift focus to the relevant camera. The relay allocates bandwidth
+according to the fractions, maintains temporal sync across all forwarded streams, and
+responds promptly to fraction changes.
 
 ~~~
 ┌────────────────────────────────────────────────────────────────────┐
