@@ -328,6 +328,8 @@ SWITCHING-SET-ASSIGNMENT {
 
 * **Set throughput fraction**: The fraction of connection throughput allocated to this switching
   set, expressed as an integer 1 <= N <= 10. The set receives N/10 of estimated bandwidth.
+  When multiple subscriptions in the same switching set specify different fraction values,
+  the relay MUST use the value from the most recently received message for that set.
 
 * **Activate switching**: When set to 0, DTS switching is paused for this set (use when
   more subscriptions will be added, or to temporarily freeze the current selection).
@@ -337,8 +339,12 @@ SWITCHING-SET-ASSIGNMENT {
 * **Set rank** (optional): Relative rank for bandwidth allocation across sets, expressed as
   an 8-bit unsigned integer (1-255). Default is 1. Values outside this range MUST result in
   a protocol error. When all sets have the same rank (default), bandwidth is allocated
-  proportionally. When sets have different ranks, lower values receive higher priority
-  during allocation.
+  proportionally based on fraction values. When sets have different ranks, lower values
+  receive higher priority: sets are processed in rank order, with each set selecting its
+  optimal rendition from the remaining bandwidth before the next set is considered. This
+  means higher-priority sets may consume most or all available bandwidth, leaving reduced
+  or no bandwidth for lower-priority sets. When using Set-Rank mode (different ranks),
+  the fraction value is ignored; allocation is determined entirely by rank order.
 
 # Subscriber Setup Methods {#subscriber-setup}
 
