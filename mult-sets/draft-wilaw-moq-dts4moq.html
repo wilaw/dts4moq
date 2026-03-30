@@ -1687,7 +1687,9 @@ with a Parameter Error.<a href="#section-3-3.1.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-3-3.3">
           <p id="section-3-3.3.1"><strong>Set throughput fraction</strong>: The fraction of connection throughput allocated to this switching
-set, expressed as an integer 1 &lt;= N &lt;= 10. The set receives N/10 of estimated bandwidth.<a href="#section-3-3.3.1" class="pilcrow">¶</a></p>
+set, expressed as an integer 1 &lt;= N &lt;= 10. The set receives N/10 of estimated bandwidth.
+When multiple subscriptions in the same switching set specify different fraction values,
+the relay <span class="bcp14">MUST</span> use the value from the most recently received message for that set.<a href="#section-3-3.3.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-3-3.4">
           <p id="section-3-3.4.1"><strong>Activate switching</strong>: When set to 0, DTS switching is paused for this set (use when
@@ -1699,8 +1701,12 @@ track take effect at the next group boundary.<a href="#section-3-3.4.1" class="p
           <p id="section-3-3.5.1"><strong>Set rank</strong> (optional): Relative rank for bandwidth allocation across sets, expressed as
 an 8-bit unsigned integer (1-255). Default is 1. Values outside this range <span class="bcp14">MUST</span> result in
 a protocol error. When all sets have the same rank (default), bandwidth is allocated
-proportionally. When sets have different ranks, lower values receive higher priority
-during allocation.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
+proportionally based on fraction values. When sets have different ranks, lower values
+receive higher priority: sets are processed in rank order, with each set selecting its
+optimal rendition from the remaining bandwidth before the next set is considered. This
+means higher-priority sets may consume most or all available bandwidth, leaving reduced
+or no bandwidth for lower-priority sets. When using Set-Rank mode (different ranks),
+the fraction value is ignored; allocation is determined entirely by rank order.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>
