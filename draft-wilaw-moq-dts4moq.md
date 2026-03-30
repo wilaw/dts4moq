@@ -307,7 +307,7 @@ subscribe parameters in subscribe or subscribe namespace messages.
 
 The SWITCHING-SET-ASSIGNMENT parameter (Parameter Type 0x41) MAY appear in a SUBSCRIBE,
 REQUEST_UPDATE, or PUBLISH_OK message. This parameter assigns a subscription to a DTS
-switching set and specifies bandwidth allocation.
+switching set and specifies bandwidth allocation and optional ranking.
 
 ~~~
 SWITCHING-SET-ASSIGNMENT {
@@ -320,15 +320,19 @@ SWITCHING-SET-ASSIGNMENT {
 ~~~
 
 * **Switching set ID**: Integer identifying the switching set. A track MUST only be assigned
-  to one switching set at a time.
+  to one switching set at a time. If a subscription attempts to assign a track that is
+  already assigned to a different switching set, the relay MUST reject the subscription
+  with a Parameter Error.
 
 * **Throughput threshold**: Minimum throughput (kbps) required to select this track.
 
 * **Set throughput fraction**: The fraction of connection throughput allocated to this switching
   set, expressed as an integer 1 <= N <= 10. The set receives N/10 of estimated bandwidth.
 
-* **Activate switching**: 0 if more subscriptions will be added to the set, or 1 if the
-  relay should activate switching immediately.
+* **Activate switching**: When set to 0, DTS switching is paused for this set (use when
+  more subscriptions will be added, or to temporarily freeze the current selection).
+  When set to 1, the relay activates or resumes switching. Changes to the selected
+  track take effect at the next group boundary.
 
 * **Set rank** (optional): Relative rank for bandwidth allocation across sets, expressed as
   an 8-bit unsigned integer (1-255). Default is 1. Values outside this range MUST result in
@@ -937,96 +941,6 @@ At 2 Mbps (severely constrained):
 │                                                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ~~~
-
-# Implementing Client-Side ABR with DTS {#client-side-abr}
-
-This section describes how DTS addresses the requirements that motivated client-side
-Adaptive Bitrate (ABR) proposals such as SWITCH (moq-transport PR #1378).
-
-## Requirements for Adaptive Streaming
-
-Client-side ABR proposals aim to solve the following requirements:
-
-1. **Bandwidth adaptation**: Adjust video quality based on available network capacity
-2. **Seamless switching**: Transition between quality levels without decode errors
-3. **Client control**: Allow subscribers to influence quality selection based on
-   application-specific context (device capabilities, user preferences, power state)
-4. **Low latency switching**: Minimize delay when changing quality levels
-5. **Efficient resource use**: Avoid wasting bandwidth on content that won't be displayed
-
-## The SWITCH Approach
-
-The SWITCH proposal addresses these requirements through explicit client-driven switching:
-
-~~~
-SWITCH Message {
-  From Subscribe Request ID (vi64),
-  To Subscribe Request ID (vi64),
-  To Fetch Request ID (vi64),
-  Track Namespace (..),
-  Track Name (..),
-  Minimum Switching Group ID (vi64),
-  Parameters (..)
-}
-~~~
-
-In the SWITCH model:
-
-- Subscriber maintains a single active subscription at a time
-- Subscriber runs an ABR algorithm to decide when and what to switch to
-- Subscriber sends SWITCH message to request transition to a different track
-- Relay processes switch locally, using FETCH for past content if needed
-- Switch occurs at a common group boundary
-
-## Addressing Requirements with DTS
-
-DTS addresses the same requirements through relay-side switching with subscriber hints:
-
-**Bandwidth adaptation**: The relay continuously monitors downstream bandwidth via the
-QUIC stack and automatically selects the best rendition that fits. The subscriber
-pre-subscribes to all renditions, enabling the relay to switch without round-trips.
-
-**Seamless switching**: The relay switches only at group boundaries where all tracks
-are time-aligned, ensuring decode continuity. The publisher indicates throughput
-thresholds to guide selection.
-
-**Client control**: While the relay makes switching decisions, subscribers can
-influence selection via REQUEST_UPDATE with SWITCHING-SET-ASSIGNMENT:
-
-| Action | Mechanism |
-|--------|-----------|
-| Force rendition | Set throughput=0 (always selected) |
-| Exclude rendition | Set throughput=MAX (never selected) |
-| Freeze selection | Set activate=0 |
-| Resume switching | Set activate=1 |
-| Adjust budget | Change fraction value |
-
-This allows subscribers to set quality floors, lock to specific renditions during
-critical moments, or adjust bandwidth allocation based on application context.
-
-**Low latency switching**: The relay switches at the next group boundary without
-waiting for a client round-trip. Bandwidth changes are detected and acted upon
-immediately.
-
-**Efficient resource use**: The relay sets Forward=0 for non-selected tracks,
-preventing transmission of content that won't be displayed.
-
-## Comparison
-
-| Requirement | SWITCH | DTS |
-|-------------|--------|-----|
-| Bandwidth adaptation | Client ABR algorithm | Relay measures and adapts |
-| Seamless switching | Group boundary alignment | Group boundary alignment |
-| Client control | Full control via SWITCH | Hints via REQUEST_UPDATE |
-| Switch latency | RTT + message processing | Next group boundary |
-| Resource efficiency | Single subscription | Forward=0 for non-selected |
-| Client complexity | ABR algorithm required | Delegate to relay |
-| Multiple streams | Separate logic per stream | Unified via switching sets |
-
-DTS provides equivalent functionality to SWITCH while enabling the relay to make
-faster, better-informed decisions based on direct bandwidth measurement. Subscribers
-retain the ability to influence or override relay decisions when application-specific
-context warrants it.
 
 # Conventions and Definitions
 
