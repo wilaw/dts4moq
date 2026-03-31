@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-29T01:49:50.850570+00:00",
+  "timestamp": "2026-03-31T01:48:21.008125+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -699,21 +699,192 @@
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
-      "body": "This PR allows Subscribers to create switching sets through two methods via Individual SUBSCRIBE and/or  SUBSCRIBE_NAMESPACE with TRACK_FILTER, wherein both methods result in the same relay behavior.\r\n\r\nIt further:\r\n\r\n- Updates introduction and abstract to refer to the use-cases\r\n- Clarifies Mapping model from MOQ Tracks to Switching Sets\r\n- Explain unified relay behavior for single and multiple switching sets and shows from the relay perspective the behavior is same\r\n- Adds optional set rank for cases where sets need not be degraded equally. \r\n- Provides examples explaining the proposal\r\n- Add a section on how SWITCH and DTS interact or can be supported in a single solution",
+      "body": "This PR allows Subscribers to create multiple switching sets through two methods via Individual SUBSCRIBEs and  SUBSCRIBE_NAMESPACE with TRACK_FILTER, wherein both methods result a similar relay behavior\r\n\r\nIt further:\r\n\r\n- Updates introduction and abstract to refer to the use-cases\r\n- Clarifies Mapping model from MOQ Tracks to Switching Sets\r\n- Explain unified relay behavior for single and multiple switching sets and shows from the relay perspective the behavior is same\r\n- Adds optional set rank for cases where sets need not be degraded equally. \r\n- Provides examples explaining the proposal\r\n- Add a section on how SWITCH and DTS interact or can be supported in a single solution",
       "createdAt": "2026-03-28T07:25:33Z",
-      "updatedAt": "2026-03-28T15:28:36Z",
+      "updatedAt": "2026-03-30T18:47:53Z",
       "baseRepository": "wilaw/dts4moq",
       "baseRefName": "main",
       "baseRefOid": "cc4c2ba19e20114d9775103b63821c3d829572fc",
       "headRepository": "wilaw/dts4moq",
       "headRefName": "mult-sets",
-      "headRefOid": "e63920b98abd6ec06808f876433b505774667247",
+      "headRefOid": "6351ba64a81c64dd7d331920141a41a83d31680a",
       "closedAt": null,
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
       "comments": [],
-      "reviews": []
+      "reviews": [
+        {
+          "id": "PRR_kwDOROSEss7wJ2ju",
+          "commit": {
+            "abbreviatedOid": "e63920b"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "COMMENTED",
+          "body": "I have two main concerns:\n1.  The definition and behavior of how Fraction and Rank work together\n2. Why the section on comparison to SWITCh is in this draft.\n\nSee individual comments on both these subjects, along with others. ",
+          "createdAt": "2026-03-30T09:06:18Z",
+          "updatedAt": "2026-03-30T12:24:55Z",
+          "comments": [
+            {
+              "originalPosition": 228,
+              "body": "```suggestion\nswitching set and specifies bandwidth allocation and optional ranking.\n```",
+              "createdAt": "2026-03-30T09:06:18Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 241,
+              "body": "What error is returned if this track is already subscribed to a switching set? ",
+              "createdAt": "2026-03-30T09:06:58Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 250,
+              "body": "This can also be used to pause switching, even if more subscriptions will not be added. \n\n```suggestion\n* **Activate switching**: 0 to deactivate switching or 1 if the\n  relay should activate switching. The change takes place at the next group boundary. \n```",
+              "createdAt": "2026-03-30T09:12:18Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 246,
+              "body": "What if you assign Set 1 from track A with a throughput fraction of 4 and then assign Set 1 for Track B with a throughput fraction of 2. Which takes precedence?\n\nI think the last specified should take precedence. If so, that should be stated in the definition. ",
+              "createdAt": "2026-03-30T09:21:10Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 256,
+              "body": "The interplay between fraction and rank is unclear as defined. Based upon the algorithm defined at line 585, the set with the highest rank is treated as if its fraction were 100% of the available bandwidth. Only for sets with equal rank, do the fractions then count. This fact should be made clear in the definitions of both set fraction and set rank. Currently the details are buried in pseudo-code.\n\nLet's imagine we have two switching sets, the first #1 assigned a 60% fraction and the second #2 a 40% fraction. #1 is given a rank of 10 and #2 is given a rank of 1 (highest). \n\nLets say the estimated throughput is 10Mbps. So Set #2 is switched as if it has 100% of the available bandwidth allocated to it. Once the track is selected, that bandwidth is subtracted from the available bandwidth and then set #1 is switched.\n\nWhat happens if Set#2 (highest rank) consumes all of the available bandwidth? There will be nothing left for lower ranked sets. Do they not get delivered at all? The answer is probably yes, and this should be made clear in the description. \n\n",
+              "createdAt": "2026-03-30T09:51:24Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 446,
+              "body": "No, the first thing it must do is either a) allocate all of the bandwidth to the highest rank set or b) Divide the available bandwidth based upon the fraction of the sets if there are 2 or more sets with equal highest rank.\n\nLets imagne we have Set#1 with 80% fraction and a rank of 1, then sets #2 and #3 with 10% fraction each and a rank of 2.\n\nSet#1 will be switched first, and the remaining bandwidth will be allocated to #2 and #3. Does each get switched as if they have 10% of the remaining bandwidth (because that is what is defined  for each) or 50% (because they are equal at 10% so the bandwidth gets shared between them). I think your intended behavior is the latter, i which case this algorithm needs to get adjusted. \n\nB_set  = B_total x (N*10/Sum(N for all sets with this rank))",
+              "createdAt": "2026-03-30T10:03:14Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 533,
+              "body": "Is the relay expected to detect and react to SCONE metadata?",
+              "createdAt": "2026-03-30T10:04:14Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 737,
+              "body": "Not immediately. It would occur at the next group boundary, which might be one second away. ",
+              "createdAt": "2026-03-30T10:11:38Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 788,
+              "body": "Not really. It protects the main camera by allocating all available bandwidth to that set, switching it, then giving the left-over bandwidth to the replay camera. This degradation happens second in the algorithm, not first. The replay camera degrades as a consequence of the main camera receiving higher priority. ",
+              "createdAt": "2026-03-30T10:14:23Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 863,
+              "body": "SWITCH is not only about adapting due to bitrate. The SWITCH proposal clearly explains that the track switch may be use to discretionary use-inout, such as selecting a particular race-car camera from a grid view. This has nothing to do with with bandwidth adaption and is not address by DTS. ",
+              "createdAt": "2026-03-30T10:18:33Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 869,
+              "body": "No, they also address switching based on other client-side requirements. ",
+              "createdAt": "2026-03-30T10:19:14Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 919,
+              "body": "DTS requires an active subscriuption ot all tracks in a set. SWITCH does not. \n\nThere are many cost reasons why a distributor may not want to have all clients pull all tracks to the edge relay. ",
+              "createdAt": "2026-03-30T10:21:58Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 975,
+              "body": "For SWITCH it is 1/2 RTT. The message processing is effectively instant. IN most cases, this 1/2 RTT is < distance to group boundary, so switching takes place at the same time in both cases. ",
+              "createdAt": "2026-03-30T10:24:36Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 977,
+              "body": "You should also add a line for \"Client flexibility\". With SWITCH, the client can adjust its algorithm at any time and have complex ABR algorithms that take into account many factors. The Relay implementation via DTS is very simple in comparison and not easy to update, as it requires coordinating software updates across multiple third party provider. ",
+              "createdAt": "2026-03-30T12:18:31Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 981,
+              "body": "DTS does not provide equivalent functionality to SWITCH. DTS only works with bandwidth based-switching. SWITCH can work with your head-position for example in a VR application. ",
+              "createdAt": "2026-03-30T12:19:49Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            },
+            {
+              "originalPosition": 860,
+              "body": "I don't think this whole section should be in this draft, which is a definition of DTS. If you want to compare DTS with SWITCH, that can be done in an informational draft somewhere else. \n\nI suggest removing this entire section from the document. ",
+              "createdAt": "2026-03-30T12:21:26Z",
+              "updatedAt": "2026-03-30T12:24:56Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7wTKi6",
+          "commit": {
+            "abbreviatedOid": "e63920b"
+          },
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-03-30T15:44:42Z",
+          "updatedAt": "2026-03-30T15:44:42Z",
+          "comments": [
+            {
+              "originalPosition": 982,
+              "body": "This section should be removed.\n\nI am frankly quite upset by it, because it does not simply compare DTS and SWITCH; it misrepresents SWITCH and, in doing so, dismisses core requirements of live streaming.\n\nFirst, this is not specification text. It reads as advocacy for DTS inside a DTS draft. Will is right: if the authors want to compare DTS and SWITCH, that belongs in a separate informational document, not here.\n\nSecond, the claim that DTS provides \u201cequivalent functionality\u201d to SWITCH is false, and the comparison is misleading on both control model and resource model. DTS requires active subscriptions to all renditions in a switching set, plus relay-side bandwidth estimation and decision-making for each downstream connection. SWITCH does not. This is not a minor implementation detail; it is a fundamentally different architecture. And DTS is a poor one from a resource-efficiency standpoint: K renditions have to be kept at the relay so that only 1 can be used, and the relay must maintain per-connection estimation and adaptation logic. That is an obvious waste of bandwidth, state, and processing at the edge. Forward=0 does not solve that problem; it only avoids downstream forwarding of the non-selected tracks. Someone has to pay for that waste, and I seriously doubt the streaming industry will accept to pay for such a mechanism.\n\nThird, the section ignores an essential requirement of live streaming: the client may deliberately choose not to switch during a temporary throughput drop because it still has buffer to absorb it. This is exactly why SWITCH includes Joining FETCH semantics and allows the subscriber to account for buffered content and drift from the live edge when switching. DTS, by contrast, is designed to keep the decision at the relay and very close to the live edge. That is a fundamentally different model. Pretending that the two are equivalent shows a real lack of respect for how live streaming actually works in the industry.\n\nIn short: this section is misplaced, technically inaccurate, and should be removed.",
+              "createdAt": "2026-03-30T15:44:42Z",
+              "updatedAt": "2026-03-30T15:44:42Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7wUvIm",
+          "commit": {
+            "abbreviatedOid": "e63920b"
+          },
+          "author": "suhasHere",
+          "authorAssociation": "COLLABORATOR",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-03-30T16:54:03Z",
+          "updatedAt": "2026-03-30T16:54:03Z",
+          "comments": [
+            {
+              "originalPosition": 982,
+              "body": "@gwendalsimon  @wilaw you are both correct. My intention was not to say switch is replaced by DTS, but wanting to see if we can get funcionality of it over DTS. Here is my rough thinking ( which i should have share before adding it to PR)\r\n\r\n\r\n@wilaw raised a valid point that SWITCH supports non-bandwidth criteria\r\n  (e.g., VR gaze tracking). However, DTS already provides mechanisms for\r\n  subscribers to influence relay decisions based on application-specific\r\n  context\u2014the relay doesn't need to understand those criteria directly.\r\n\r\n  The subscriber retains full control over which streams matter and how\r\n  much bandwidth each should receive. The relay only handles the\r\n  bandwidth-constrained selection within those parameters.\r\n\r\n  Example: VR head-position tracking with DTS\r\n\r\n  // User looks at tile 3 \u2192 subscriber promotes it\r\n  REQUEST_UPDATE (tile3) fraction=4   // high priority\r\n  REQUEST_UPDATE (tile1) fraction=1   // demote others\r\n\r\n  // User looks at tile 5 \u2192 subscriber adjusts\r\n  REQUEST_UPDATE (tile3) fraction=1   // demote\r\n  REQUEST_UPDATE (tile5) fraction=4   // promote new gaze target\r\n\r\n  The subscriber's application logic (gaze tracker, active speaker\r\n  detector, etc.) runs locally and translates application-specific\r\n  signals into DTS parameters. The relay then makes optimal bandwidth\r\n  allocation decisions within those constraints.\r\n\r\n  Key difference from SWITCH: With SWITCH, the subscriber must also run\r\n  bandwidth estimation and ABR selection. With DTS, the subscriber only\r\n  expresses intent (via fractions/priorities), and the relay handles\r\n  bandwidth-optimal execution. This separation means:\r\n  - Subscriber logic is simpler (no ABR algorithm needed)\r\n  - Relay can react faster to bandwidth changes (no RTT delay)\r\n  - Application-specific criteria are still fully supported\r\n  \r\n  \r\n  Please let me know if this addresses all the requirements for SWITCH. I am happy to learn it doesn't and not proceed in this direction too. please let me know",
+              "createdAt": "2026-03-30T16:54:03Z",
+              "updatedAt": "2026-03-30T16:54:03Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7wVrdB",
+          "commit": {
+            "abbreviatedOid": "e63920b"
+          },
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-03-30T17:32:15Z",
+          "updatedAt": "2026-03-30T17:32:15Z",
+          "comments": [
+            {
+              "originalPosition": 982,
+              "body": "Thanks, Suhas. I appreciate the clarification.\r\n\r\nIn live streaming, we do NOT want to react to every bandwidth change. A temporary throughput drop should often be absorbed by the client buffer rather than trigger an immediate downgrade. Faster reaction is not better; it makes the system more nervous and degrade quality unnecessarily.\r\n\r\nFurthermore, we WANT the client to run the ABR logic. The client is the entity that knows the relevant playback context: buffer level, playback rate, distance from the live edge, recent delivery history, and rebuffer risk. The relay does not. A relay-side bandwidth estimate plus a few subscriber hints is not equivalent to client-side ABR.\r\n\r\nThis is also why lag behind live is a feature, not a bug. In live streaming, keeping some controlled distance from the live edge is what allows the client to absorb transient bandwidth reductions without unnecessary switching. That is why Joining Fetch MUST exist in SWITCH.\r\n\r\nFinally, the resource model of DTS is poor. DTS keeps K renditions active at the relay so that only 1 is actually used, and it adds one bandwidth estimation and adaptation loop per downstream connection. That is a waste of bandwidth, state, and processing at the edge. Someone has to pay for that design, and I am not convinced the streaming industry will accept such a costly mechanism, with respect to the size of the ladder (K=9 is not unusual) and the bitrates of the tracks.",
+              "createdAt": "2026-03-30T17:32:15Z",
+              "updatedAt": "2026-03-30T17:32:15Z"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
