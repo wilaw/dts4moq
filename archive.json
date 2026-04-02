@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-03-31T01:48:21.008125+00:00",
+  "timestamp": "2026-04-02T01:45:35.742598+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -701,7 +701,7 @@
       "labels": [],
       "body": "This PR allows Subscribers to create multiple switching sets through two methods via Individual SUBSCRIBEs and  SUBSCRIBE_NAMESPACE with TRACK_FILTER, wherein both methods result a similar relay behavior\r\n\r\nIt further:\r\n\r\n- Updates introduction and abstract to refer to the use-cases\r\n- Clarifies Mapping model from MOQ Tracks to Switching Sets\r\n- Explain unified relay behavior for single and multiple switching sets and shows from the relay perspective the behavior is same\r\n- Adds optional set rank for cases where sets need not be degraded equally. \r\n- Provides examples explaining the proposal\r\n- Add a section on how SWITCH and DTS interact or can be supported in a single solution",
       "createdAt": "2026-03-28T07:25:33Z",
-      "updatedAt": "2026-03-30T18:47:53Z",
+      "updatedAt": "2026-04-01T12:50:40Z",
       "baseRepository": "wilaw/dts4moq",
       "baseRefName": "main",
       "baseRefOid": "cc4c2ba19e20114d9775103b63821c3d829572fc",
@@ -881,6 +881,46 @@
               "body": "Thanks, Suhas. I appreciate the clarification.\r\n\r\nIn live streaming, we do NOT want to react to every bandwidth change. A temporary throughput drop should often be absorbed by the client buffer rather than trigger an immediate downgrade. Faster reaction is not better; it makes the system more nervous and degrade quality unnecessarily.\r\n\r\nFurthermore, we WANT the client to run the ABR logic. The client is the entity that knows the relevant playback context: buffer level, playback rate, distance from the live edge, recent delivery history, and rebuffer risk. The relay does not. A relay-side bandwidth estimate plus a few subscriber hints is not equivalent to client-side ABR.\r\n\r\nThis is also why lag behind live is a feature, not a bug. In live streaming, keeping some controlled distance from the live edge is what allows the client to absorb transient bandwidth reductions without unnecessary switching. That is why Joining Fetch MUST exist in SWITCH.\r\n\r\nFinally, the resource model of DTS is poor. DTS keeps K renditions active at the relay so that only 1 is actually used, and it adds one bandwidth estimation and adaptation loop per downstream connection. That is a waste of bandwidth, state, and processing at the edge. Someone has to pay for that design, and I am not convinced the streaming industry will accept such a costly mechanism, with respect to the size of the ladder (K=9 is not unusual) and the bitrates of the tracks.",
               "createdAt": "2026-03-30T17:32:15Z",
               "updatedAt": "2026-03-30T17:32:15Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7xCTjA",
+          "commit": {
+            "abbreviatedOid": "e63920b"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-04-01T12:39:05Z",
+          "updatedAt": "2026-04-01T12:39:06Z",
+          "comments": [
+            {
+              "originalPosition": 982,
+              "body": "> // User looks at tile 3 \u2192 subscriber promotes it\r\n> REQUEST_UPDATE (tile3) fraction=4 // high priority\r\n> REQUEST_UPDATE (tile1) fraction=1 // demote others\r\n> \r\n> // User looks at tile 5 \u2192 subscriber adjusts\r\n> REQUEST_UPDATE (tile3) fraction=1 // demote\r\n> REQUEST_UPDATE (tile5) fraction=4 // promote new gaze target\r\n\r\nThis argument doesn't work if the subscriber is switching from an English audio track to a French one. IN the example above, the demoted tiles (or language) have a fraction of 1 and are still delivered. But thats not want we want. We want a clean switch from English to French where one replaces the other. If the argument is that the fraction can be set to 0, then we are just re-inventing forward=0 as well as unsubscribe, both of which we already have. I see SWITCH and DTS serving different purposes and I feel MOQT needs both to offer the most flexibility to applicantion architects. ",
+              "createdAt": "2026-04-01T12:39:05Z",
+              "updatedAt": "2026-04-01T12:39:06Z"
+            }
+          ]
+        },
+        {
+          "id": "PRR_kwDOROSEss7xCj8L",
+          "commit": {
+            "abbreviatedOid": "6351ba6"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "COMMENTED",
+          "body": "",
+          "createdAt": "2026-04-01T12:50:40Z",
+          "updatedAt": "2026-04-01T12:50:40Z",
+          "comments": [
+            {
+              "originalPosition": 280,
+              "body": "```suggestion\n  the fraction value is ignored unless two or more sets have the same rank value; in which case the available bandwidth is allocated between those sets according to their fractions. If each rank only holds one set, then allocation is determined entirely by rank order.\n```",
+              "createdAt": "2026-04-01T12:50:40Z",
+              "updatedAt": "2026-04-01T12:50:40Z"
             }
           ]
         }
