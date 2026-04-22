@@ -344,7 +344,7 @@ SWITCHING-SET-ASSIGNMENT {
   optimal rendition from the remaining bandwidth before the next set is considered. This
   means higher-priority sets may consume most or all available bandwidth, leaving reduced
   or no bandwidth for lower-priority sets. When using Set-Rank mode (different ranks),
-  the fraction value is ignored; allocation is determined entirely by rank order.
+  the fraction value is ignored unless two or more sets have the same rank value; in which case the available bandwidth is allocated between those sets according to their fractions. If each rank only holds one set, then allocation is determined entirely by rank order.
 
 # Subscriber Setup Methods {#subscriber-setup}
 
