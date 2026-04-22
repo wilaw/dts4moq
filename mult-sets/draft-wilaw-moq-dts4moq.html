@@ -25,19 +25,19 @@ subscribers specify relative bandwidth allocation via Set throughput fraction, e
 the relay adaptation algorithm to allocate bandwidth across sets before selecting
 renditions within each set. 
     " name="description">
-<meta content="xml2rfc 3.32.0" name="generator">
+<meta content="xml2rfc 3.33.0" name="generator">
 <meta content="moqt" name="keyword">
 <meta content="dts" name="keyword">
 <meta content="draft-wilaw-moq-dts4moq-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.32.0
-    Python 3.12.12
+  xml2rfc 3.33.0
+    Python 3.12.13
     ConfigArgParse 1.7
     google-i18n-address 3.1.1
     intervaltree 3.2.1
     Jinja2 3.1.6
     lxml 6.0.2
-    platformdirs 4.9.4
+    platformdirs 4.9.6
     pycountry 24.6.1
     PyYAML 6.0.3
     requests 2.32.5
@@ -1062,11 +1062,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">Dynamic Track Switching for MOQT relays</td>
-<td class="right">March 2026</td>
+<td class="right">April 2026</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Law, et al.</td>
-<td class="center">Expires 1 October 2026</td>
+<td class="center">Expires 24 October 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1079,12 +1079,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-wilaw-moq-dts4moq-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-03-30" class="published">30 March 2026</time>
+<time datetime="2026-04-22" class="published">22 April 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-01">1 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-10-24">24 October 2026</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
@@ -1171,7 +1171,7 @@ renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a><
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 1 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 24 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1706,7 +1706,7 @@ receive higher priority: sets are processed in rank order, with each set selecti
 optimal rendition from the remaining bandwidth before the next set is considered. This
 means higher-priority sets may consume most or all available bandwidth, leaving reduced
 or no bandwidth for lower-priority sets. When using Set-Rank mode (different ranks),
-the fraction value is ignored; allocation is determined entirely by rank order.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
+the fraction value is ignored unless two or more sets have the same rank value; in which case the available bandwidth is allocated between those sets according to their fractions. If each rank only holds one set, then allocation is determined entirely by rank order.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>

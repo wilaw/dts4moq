@@ -5,7 +5,7 @@
 Media Over QUIC                                                   W. Law
 Internet-Draft                                                    Akamai
 Intended status: Informational                                  I. Swett
-Expires: 1 October 2026                                           Google
+Expires: 24 October 2026                                          Google
                                                            S. Nandakumar
                                                                M. Zanaty
                                                                    Cisco
@@ -16,7 +16,7 @@ Expires: 1 October 2026                                           Google
                                                       Ozyegin University
                                                                 G. Simon
                                                                Synamedia
-                                                           30 March 2026
+                                                           22 April 2026
 
 
                 Dynamic Track Switching for MOQT relays
@@ -69,7 +69,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 1 October 2026.
+   This Internet-Draft will expire on 24 October 2026.
 
 Copyright Notice
 
@@ -441,8 +441,11 @@ Table of Contents
       considered.  This means higher-priority sets may consume most or
       all available bandwidth, leaving reduced or no bandwidth for
       lower-priority sets.  When using Set-Rank mode (different ranks),
-      the fraction value is ignored; allocation is determined entirely
-      by rank order.
+      the fraction value is ignored unless two or more sets have the
+      same rank value; in which case the available bandwidth is
+      allocated between those sets according to their fractions.  If
+      each rank only holds one set, then allocation is determined
+      entirely by rank order.
 
 4.  Subscriber Setup Methods
 
