@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-04-02T01:45:35.742598+00:00",
+  "timestamp": "2026-04-23T02:00:05.679335+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -701,13 +701,13 @@
       "labels": [],
       "body": "This PR allows Subscribers to create multiple switching sets through two methods via Individual SUBSCRIBEs and  SUBSCRIBE_NAMESPACE with TRACK_FILTER, wherein both methods result a similar relay behavior\r\n\r\nIt further:\r\n\r\n- Updates introduction and abstract to refer to the use-cases\r\n- Clarifies Mapping model from MOQ Tracks to Switching Sets\r\n- Explain unified relay behavior for single and multiple switching sets and shows from the relay perspective the behavior is same\r\n- Adds optional set rank for cases where sets need not be degraded equally. \r\n- Provides examples explaining the proposal\r\n- Add a section on how SWITCH and DTS interact or can be supported in a single solution",
       "createdAt": "2026-03-28T07:25:33Z",
-      "updatedAt": "2026-04-01T12:50:40Z",
+      "updatedAt": "2026-04-22T05:52:15Z",
       "baseRepository": "wilaw/dts4moq",
       "baseRefName": "main",
       "baseRefOid": "cc4c2ba19e20114d9775103b63821c3d829572fc",
       "headRepository": "wilaw/dts4moq",
       "headRefName": "mult-sets",
-      "headRefOid": "6351ba64a81c64dd7d331920141a41a83d31680a",
+      "headRefOid": "7a19a75c5408398d4806336526981cd746884ff1",
       "closedAt": null,
       "mergedAt": null,
       "mergedBy": null,
