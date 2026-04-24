@@ -16,14 +16,12 @@
 <meta content="
        This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport (MOQT).
 DTS enables relays to dynamically select which track to forward from a switching set—a
-collection of time-aligned tracks representing the same content at different quality levels,
-typically from a single source.
+collection of time-aligned tracks representing the same content at different throughput levels.
 The relay selects exactly one track per switching set at each group boundary based on
 available downstream bandwidth. Subscribers use the SWITCHING-SET-ASSIGNMENT parameter to
-group subscriptions into switching sets. When multiple switching sets are present,
-subscribers specify relative bandwidth allocation via Set throughput fraction, enabling
-the relay adaptation algorithm to allocate bandwidth across sets before selecting
-renditions within each set. 
+group subscriptions into switching sets and specify bandwidth allocation via fraction
+(relative weight) and rank (degradation priority). Fraction determines target bandwidth
+allocation; rank determines which sets degrade first when bandwidth is constrained. 
     " name="description">
 <meta content="xml2rfc 3.33.0" name="generator">
 <meta content="moqt" name="keyword">
@@ -1066,7 +1064,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Law, et al.</td>
-<td class="center">Expires 24 October 2026</td>
+<td class="center">Expires 26 October 2026</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1079,12 +1077,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-wilaw-moq-dts4moq-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-04-22" class="published">22 April 2026</time>
+<time datetime="2026-04-24" class="published">24 April 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2026-10-24">24 October 2026</time></dd>
+<dd class="expires"><time datetime="2026-10-26">26 October 2026</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
@@ -1127,14 +1125,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
 <p id="section-abstract-1">This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport (MOQT).
 DTS enables relays to dynamically select which track to forward from a switching set—a
-collection of time-aligned tracks representing the same content at different quality levels,
-typically from a single source.
+collection of time-aligned tracks representing the same content at different throughput levels.
 The relay selects exactly one track per switching set at each group boundary based on
 available downstream bandwidth. Subscribers use the SWITCHING-SET-ASSIGNMENT parameter to
-group subscriptions into switching sets. When multiple switching sets are present,
-subscribers specify relative bandwidth allocation via Set throughput fraction, enabling
-the relay adaptation algorithm to allocate bandwidth across sets before selecting
-renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+group subscriptions into switching sets and specify bandwidth allocation via fraction
+(relative weight) and rank (degradation priority). Fraction determines target bandwidth
+allocation; rank determines which sets degrade first when bandwidth is constrained.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note rfcEditorRemove" id="section-note.1">
       <h2 id="name-about-this-document">
@@ -1171,7 +1167,7 @@ renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a><
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 24 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 26 October 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1207,7 +1203,7 @@ renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a><
             <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-requirements" class="internal xref">Requirements</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
-                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-mapping-to-moq-model" class="internal xref">Mapping to MoQ Model</a></p>
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
                 <p id="section-toc.1-1.2.2.2.1" class="keepWithNext"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-content-requirements" class="internal xref">Content Requirements</a></p>
@@ -1235,9 +1231,6 @@ renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a><
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
                 <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-method-2-subscribe_namespac" class="internal xref">Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
-                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-dynamic-updates" class="internal xref">Dynamic Updates</a></p>
-</li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
@@ -1247,24 +1240,24 @@ renditions within each set.<a href="#section-abstract-1" class="pilcrow">¶</a><
                 <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-processing-switching-sets" class="internal xref">Processing Switching Sets</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
-                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-bandwidth-allocation" class="internal xref">Bandwidth Allocation</a></p>
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-dynamic-updates" class="internal xref">Dynamic Updates</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
-                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-allocation-modes" class="internal xref">Allocation Modes</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.1">
-                    <p id="section-toc.1-1.5.2.3.2.1.1"><a href="#section-5.3.1" class="auto internal xref">5.3.1</a>.  <a href="#name-equal-allocation-default" class="internal xref">Equal Allocation (Default)</a></p>
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-bandwidth-allocation" class="internal xref">Bandwidth Allocation</a></p>
 </li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3.2.2">
-                    <p id="section-toc.1-1.5.2.3.2.2.1"><a href="#section-5.3.2" class="auto internal xref">5.3.2</a>.  <a href="#name-set-rank-mode" class="internal xref">Set-Rank Mode</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
+                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-fraction-and-rank-interacti" class="internal xref">Fraction and Rank Interaction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4.2.1">
+                    <p id="section-toc.1-1.5.2.4.2.1.1"><a href="#section-5.4.1" class="auto internal xref">5.4.1</a>.  <a href="#name-allocation-examples" class="internal xref">Allocation Examples</a></p>
 </li>
                 </ul>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
-                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-implementation-pseudocode" class="internal xref">Implementation Pseudocode</a></p>
-</li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
-                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-bandwidth-estimation" class="internal xref">Bandwidth Estimation</a></p>
+                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-implementation-pseudocode" class="internal xref">Implementation Pseudocode</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
+                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-bandwidth-estimation" class="internal xref">Bandwidth Estimation</a></p>
 </li>
             </ul>
 </li>
@@ -1366,14 +1359,12 @@ DTS enables relays to dynamically select which track to forward from a switching
 on available downstream bandwidth.<a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">DTS addresses a range of real-time media applications where bandwidth-adaptive delivery
 improves user experience. These include adaptive bitrate streaming for live video, video
-conferencing with multiple participants at varying quality levels, VR/AR streaming with
+conferencing with multiple participants at varying throughput levels, VR/AR streaming with
 gaze-based quality allocation, and hybrid scenarios combining adaptive streams with
 fixed-bandwidth overlays such as cloud gaming HUDs or sports statistics. These use cases
-(detailed in <a href="#usecase-appendix" class="auto internal xref">Appendix A</a>) drive the requirements for originla publishers, end subscribers,
-and relays specified in this document.<a href="#section-1-2" class="pilcrow">¶</a></p>
+(detailed in <a href="#usecase-appendix" class="auto internal xref">Appendix A</a>) drive the requirements for originla publishers, end subscribers, and relays specified in this document.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">A switching set is a collection of MoQ tracks representing the same content encoded at
-different quality levels (renditions), typically from a single source. Tracks within a switching set are time-aligned at
-group boundaries, allowing the relay to switch between renditions without causing decode
+different throughput levels, typically from a single source. Tracks within a switching set are time-aligned at group boundaries, allowing the relay to switch between tracks without disrupting
 errors. The relay selects exactly one track per switching set to forward at any given time.<a href="#section-1-3" class="pilcrow">¶</a></p>
 <p id="section-1-4">Subscribers can create switching sets through two methods:<a href="#section-1-4" class="pilcrow">¶</a></p>
 <ul class="normal">
@@ -1384,13 +1375,15 @@ SWITCHING-SET-ASSIGNMENT parameter to group them into switching sets.<a href="#s
         <li class="normal" id="section-1-5.2">
           <p id="section-1-5.2.1"><strong>SUBSCRIBE_NAMESPACE with TRACK_FILTER</strong>: Subscriber uses namespace subscription with
 a filter to select top-N tracks ranked by a specified property (e.g., VIEWCOUNT for
-selecting the most popular streams), and the relay applies DTS switching to each
-selected source.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
+selecting the most popular streams). The relay forwards matching tracks and the
+subscriber assigns them to switching sets via PUBLISH_OK.<a href="#section-1-5.2.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
-<p id="section-1-6">Both methods result in the same relay behavior: the relay processes one or more switching
-sets, allocates bandwidth based on Set throughput fraction, and selects the best rendition
-per set at each group boundary.<a href="#section-1-6" class="pilcrow">¶</a></p>
+<p id="section-1-6">Both methods result in the same relay behavior: the relay processes switching sets,
+allocates bandwidth based on fraction and rank, and selects the best track per set
+at each group boundary. Fraction determines target bandwidth allocation; rank determines
+degradation priority when bandwidth is constrained, lower-ranked sets degrade first while
+higher-ranked sets are protected.<a href="#section-1-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="requirements">
@@ -1401,18 +1394,20 @@ per set at each group boundary.<a href="#section-1-6" class="pilcrow">¶</a></p>
 <p id="section-2-1">This section describes the requirements that Dynamic Track Switching places on original
 publishers, end subscribers, and relays. These requirements are derived from the use cases
 described in <a href="#usecase-appendix" class="auto internal xref">Appendix A</a>.<a href="#section-2-1" class="pilcrow">¶</a></p>
-<div id="mapping-to-moq-model">
+<div id="terminology">
 <section id="section-2.1">
-        <h3 id="name-mapping-to-moq-model">
-<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-mapping-to-moq-model" class="section-name selfRef">Mapping to MoQ Model</a>
+        <h3 id="name-terminology">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
         </h3>
-<p id="section-2.1-1">A <strong>rendition</strong> is a single encoding of content at a specific quality level (e.g., 1080p at 5 Mbps).
-Each rendition corresponds to exactly one MoQ <strong>track</strong>.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
-<p id="section-2.1-2">A <strong>switching set</strong> is a collection of one or more tracks that represent the same content encoded
-at different quality levels. All tracks within a switching set <span class="bcp14">MUST</span> be time-aligned at group
+<p id="section-2.1-1">A <strong>switching set</strong> is a collection of one or more tracks that represent the same content at
+different throughput levels. All tracks within a switching set <span class="bcp14">MUST</span> be time-aligned at group
 boundaries to enable seamless switching. The relay selects exactly one track from the switching
-set to forward at any given time.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-2.1-3">
+set to forward at any given time.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">A <strong>throughput level</strong> refers to the bandwidth requirement of a track within a switching set.
+Tracks in a switching set are distinguished by their throughput requirements, allowing the
+relay to select an appropriate track based on available bandwidth.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3">In media applications carrying video at various qualites, tracks within a switching set are commonly called <strong>renditions</strong>, representing different quality levels (e.g., 1080p at 5 Mbps, 720p at 2 Mbps). Each rendition corresponds to exactly one MoQ track.<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.1-4">
 <pre>
 ┌──────────────────────────────────────────────────────────────────────┐
 │                    Switching Set to MoQ Mapping                      │
@@ -1426,8 +1421,7 @@ set to forward at any given time.<a href="#section-2.1-2" class="pilcrow">¶</a>
 │              │              │              │                         │
 │              v              v              v                         │
 │         ┌────────┐    ┌────────┐    ┌────────┐                       │
-│         │ 1080p  │    │  720p  │    │  480p  │   (3 quality levels)  │
-│         │ 5 Mbps │    │ 2 Mbps │    │800 kbps│                       │
+│         │ 5 Mbps │    │ 2 Mbps │    │800 kbps│  (3 throughput levels)│
 │         └────────┘    └────────┘    └────────┘                       │
 │              │              │              │                         │
 │              v              v              v                         │
@@ -1445,32 +1439,7 @@ set to forward at any given time.<a href="#section-2.1-2" class="pilcrow">¶</a>
 │                                                                      │
 │ Relay receives all tracks, forwards exactly ONE based on bandwidth   │
 └──────────────────────────────────────────────────────────────────────┘
-</pre><a href="#section-2.1-3" class="pilcrow">¶</a>
-</div>
-<p id="section-2.1-4">For scenarios with multiple independent sources, each source has its own switching set.
-The relay manages bandwidth allocation across all switching sets while selecting one
-track per set.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-2.1-5">
-<pre>
-┌──────────────────────────────────────────────────────────────────────┐
-│                      Multiple Switching Sets                         │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│ ┌─── Switching Set 1 ───┐  ┌─── Switching Set 2 ───┐                 │
-│ │       (Alice)         │  │        (Bob)          │                 │
-│ │                       │  │                       │                 │
-│ │ Track   Track   Track │  │ Track   Track   Track │                 │
-│ │ 1080p   720p    480p  │  │ 1080p   720p    480p  │    ...          │
-│ │                       │  │                       │                 │
-│ └───────────────────────┘  └───────────────────────┘                 │
-│          │                          │                                │
-│          v                          v                                │
-│    [Relay selects           [Relay selects                           │
-│     720p for Alice]          480p for Bob]                           │
-│                                                                      │
-│ Bandwidth allocated across sets based on Set throughput fraction     │
-└──────────────────────────────────────────────────────────────────────┘
-</pre><a href="#section-2.1-5" class="pilcrow">¶</a>
+</pre><a href="#section-2.1-4" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
@@ -1483,15 +1452,16 @@ track per set.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2-2.1">
             <p id="section-2.2-2.1.1"><span class="bcp14">MUST</span> be time aligned at group boundaries. This enables the relay to switch
-between renditions at group boundaries without causing decode errors.<a href="#section-2.2-2.1.1" class="pilcrow">¶</a></p>
+between tracks at group boundaries without disruption.<a href="#section-2.2-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.2-2.2">
-            <p id="section-2.2-2.2.1"><span class="bcp14">MUST</span> hold equivalent and independent versions of the same content, encoded
-at different bitrates. DTS is not a solution for switching between Scalable
-Video Coding (SVC) layers, which have dependencies between layers.<a href="#section-2.2-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-2.2-2.2.1"><span class="bcp14">MUST</span> hold equivalent and independent versions of the same content at
+different throughput levels. DTS is not a solution for switching between
+tracks with inter-track dependencies (e.g., layered coding where higher
+layers depend on lower layers).<a href="#section-2.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.2-2.3">
-            <p id="section-2.2-2.3.1"><span class="bcp14">SHOULD</span> have consistent group durations across all renditions within a
+            <p id="section-2.2-2.3.1"><span class="bcp14">SHOULD</span> have consistent group durations across all tracks within a
 switching set to simplify relay timing decisions.<a href="#section-2.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
@@ -1502,49 +1472,23 @@ switching set to simplify relay timing decisions.<a href="#section-2.2-2.3.1" cl
         <h3 id="name-original-publisher-requirem">
 <a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-original-publisher-requirem" class="section-name selfRef">Original Publisher Requirements</a>
         </h3>
-<p id="section-2.3-1">Original publishers are responsible for producing and advertising media tracks that can be
-dynamically switched by relays.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<p id="section-2.3-1">Original publishers are responsible for producing tracks that can be dynamically
+switched by relays.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.3-2.1">
-            <p id="section-2.3-2.1.1"><span class="bcp14">MUST</span> publish multiple time-aligned renditions of the same content at different quality levels
-(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>,
-<a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.1.1" class="pilcrow">¶</a></p>
+            <p id="section-2.3-2.1.1"><span class="bcp14">MUST</span> publish multiple time-aligned tracks of the same content at different throughput
+levels<a href="#section-2.3-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.3-2.2">
-            <p id="section-2.3-2.2.1"><span class="bcp14">MUST</span> ensure groups across renditions are temporally aligned to enable seamless switching at
-group boundaries (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.3-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-2.3-2.2.1"><span class="bcp14">MUST</span> ensure groups across tracks are temporally aligned to enable seamless switching
+at group boundaries<a href="#section-2.3-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.3-2.3">
-            <p id="section-2.3-2.3.1"><span class="bcp14">SHOULD</span> advertise throughput requirements for each rendition to enable bandwidth-based selection
-(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>,
-<a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.3.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.3-2.4">
-            <p id="section-2.3-2.4.1"><span class="bcp14">SHOULD</span> indicate which tracks belong to the same switching set or alternate group
-(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>)<a href="#section-2.3-2.4.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.3-2.5">
-            <p id="section-2.3-2.5.1"><span class="bcp14">SHOULD</span> indicate content type characteristics and relative priorities when publishing multiple
-content types (see <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.5.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.3-2.6">
-            <p id="section-2.3-2.6.1"><span class="bcp14">SHOULD</span> publish high-priority or fixed-bandwidth streams (such as HUD overlays, stats, or
-telemetry) as separate tracks with low publisher_priority values
-(see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.6.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.3-2.7">
-            <p id="section-2.3-2.7.1"><span class="bcp14">SHOULD</span> minimize encoding latency for latency-critical streams such as control cameras or
-interactive game video (see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.7.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.3-2.8">
-            <p id="section-2.3-2.8.1"><span class="bcp14">MUST</span> ensure all streams share a common time reference when temporal synchronization across
-multiple streams is required (see <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.3-2.8.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.3-2.9">
-            <p id="section-2.3-2.9.1"><span class="bcp14">SHOULD</span> indicate spatial relationships or layer hierarchy when applicable
-(see <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>)<a href="#section-2.3-2.9.1" class="pilcrow">¶</a></p>
+            <p id="section-2.3-2.3.1"><span class="bcp14">SHOULD</span> advertise throughput requirements for each track to enable bandwidth-based
+selection<a href="#section-2.3-2.3.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
+<p id="section-2.3-3">See <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, and <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a> for examples.<a href="#section-2.3-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="end-subscriber-requirements">
@@ -1556,43 +1500,20 @@ multiple streams is required (see <a href="#usecase-sports" class="auto internal
 preferences to relays.<a href="#section-2.4-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.4-2.1">
-            <p id="section-2.4-2.1.1"><span class="bcp14">MUST</span> subscribe to all desired renditions within a switching set and indicate which subscriptions
-form a switching set for relay coordination (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.4-2.1.1" class="pilcrow">¶</a></p>
+            <p id="section-2.4-2.1.1"><span class="bcp14">MUST</span> subscribe to all desired tracks within a switching set and indicate which
+subscriptions form a switching set via SWITCHING-SET-ASSIGNMENT<a href="#section-2.4-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.4-2.2">
-            <p id="section-2.4-2.2.1"><span class="bcp14">MUST</span> be prepared to decode any rendition within the switching set (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.4-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-2.4-2.2.1"><span class="bcp14">MUST</span> be prepared to process any track within the switching set<a href="#section-2.4-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.4-2.3">
-            <p id="section-2.4-2.3.1"><span class="bcp14">MUST</span> subscribe to multiple switching sets simultaneously when receiving multiple independent
-streams (see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>,
-<a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.3.1" class="pilcrow">¶</a></p>
+            <p id="section-2.4-2.3.1"><span class="bcp14">MUST</span> specify fraction and rank for each switching set to guide relay bandwidth allocation<a href="#section-2.4-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.4-2.4">
-            <p id="section-2.4-2.4.1"><span class="bcp14">MUST</span> indicate relative bandwidth allocation via Set throughput fraction for each switching
-set to guide relay bandwidth allocation (see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>,
-<a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.4.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.4-2.5">
-            <p id="section-2.4-2.5.1"><span class="bcp14">SHOULD</span> use content type characteristics from the catalog to determine appropriate relative
-priorities or weights (see <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.5.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.4-2.6">
-            <p id="section-2.4-2.6.1"><span class="bcp14">MAY</span> dynamically adjust priorities based on changing conditions such as active speaker changes,
-gaze direction updates, or user interaction
-(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.4-2.6.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.4-2.7">
-            <p id="section-2.4-2.7.1"><span class="bcp14">SHOULD</span> specify total bandwidth budget or constraints when applicable (see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>)<a href="#section-2.4-2.7.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.4-2.8">
-            <p id="section-2.4-2.8.1"><span class="bcp14">MAY</span> specify minimum acceptable quality thresholds for critical content
-(see <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.4-2.8.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.4-2.9">
-            <p id="section-2.4-2.9.1"><span class="bcp14">SHOULD</span> specify latency requirements for latency-critical streams
-(see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.4-2.9.1" class="pilcrow">¶</a></p>
+            <p id="section-2.4-2.4.1"><span class="bcp14">MAY</span> dynamically adjust fraction and rank via REQUEST_UPDATE based on changing conditions<a href="#section-2.4-2.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
+<p id="section-2.4-3">See <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, and <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a> for examples of dynamic updates.<a href="#section-2.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="relay-requirements">
@@ -1601,57 +1522,29 @@ gaze direction updates, or user interaction
 <a href="#section-2.5" class="section-number selfRef">2.5. </a><a href="#name-relay-requirements" class="section-name selfRef">Relay Requirements</a>
         </h3>
 <p id="section-2.5-1">Relays are responsible for making dynamic track selection decisions and forwarding the
-appropriate groups to downstream subscribers. Relays do not have access to the catalog;
-switching metadata is obtained from track properties in publish messages and from
-subscribe parameters in subscribe or subscribe namespace messages.<a href="#section-2.5-1" class="pilcrow">¶</a></p>
+appropriate groups to downstream subscribers.<a href="#section-2.5-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.5-2.1">
-            <p id="section-2.5-2.1.1"><span class="bcp14">MUST</span> track available bandwidth to each downstream subscriber (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.5-2.1.1" class="pilcrow">¶</a></p>
+            <p id="section-2.5-2.1.1"><span class="bcp14">MUST</span> track available bandwidth to each downstream subscriber<a href="#section-2.5-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.5-2.2">
-            <p id="section-2.5-2.2.1"><span class="bcp14">MUST</span> select exactly one rendition per switching set to forward at any given time
-(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>,
-<a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-2.5-2.2.1"><span class="bcp14">MUST</span> select exactly one track per switching set to forward at any given time<a href="#section-2.5-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.5-2.3">
-            <p id="section-2.5-2.3.1"><span class="bcp14">MUST</span> switch renditions at group boundaries to maintain decodability
-(see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>,
-<a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.3.1" class="pilcrow">¶</a></p>
+            <p id="section-2.5-2.3.1"><span class="bcp14">MUST</span> switch tracks at group boundaries to maintain continuity<a href="#section-2.5-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.5-2.4">
-            <p id="section-2.5-2.4.1"><span class="bcp14">MUST</span> allocate forwarding capacity across multiple switching sets simultaneously when serving
-subscribers with multiple concurrent streams
-(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>,
-<a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.4.1" class="pilcrow">¶</a></p>
+            <p id="section-2.5-2.4.1"><span class="bcp14">MUST</span> allocate bandwidth across switching sets based on fraction and rank<a href="#section-2.5-2.4.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.5-2.5">
-            <p id="section-2.5-2.5.1"><span class="bcp14">MUST</span> respect Set throughput fraction values when allocating bandwidth to switching sets
-(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.5-2.5.1" class="pilcrow">¶</a></p>
+            <p id="section-2.5-2.5.1"><span class="bcp14">MUST</span> respond to fraction and rank updates from subscribers<a href="#section-2.5-2.5.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-2.5-2.6">
-            <p id="section-2.5-2.6.1"><span class="bcp14">SHOULD</span> select appropriate quality levels within each set's allocated bandwidth
-(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-screenshare" class="auto internal xref">Appendix A.2.2</a>)<a href="#section-2.5-2.6.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.5-2.7">
-            <p id="section-2.5-2.7.1"><span class="bcp14">MUST</span> respond rapidly to Set throughput fraction updates from subscribers
-(see <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a>, <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>)<a href="#section-2.5-2.7.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.5-2.8">
-            <p id="section-2.5-2.8.1"><span class="bcp14">MUST</span> prioritize forwarding groups for high-priority streams before performing adaptive
-allocation for other streams (see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.8.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.5-2.9">
-            <p id="section-2.5-2.9.1"><span class="bcp14">MUST</span> prioritize latency for latency-critical streams such as control cameras or interactive
-game video (see <a href="#usecase-gaming" class="auto internal xref">Appendix A.3.1</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.9.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.5-2.10">
-            <p id="section-2.5-2.10.1"><span class="bcp14">MUST</span> maintain temporal synchronization when forwarding multiple related streams
-(see <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a>, <a href="#usecase-teleop" class="auto internal xref">Appendix A.3.3</a>)<a href="#section-2.5-2.10.1" class="pilcrow">¶</a></p>
-</li>
-          <li class="normal" id="section-2.5-2.11">
-            <p id="section-2.5-2.11.1"><span class="bcp14">SHOULD</span> minimize switching latency when bandwidth conditions change (see <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a>)<a href="#section-2.5-2.11.1" class="pilcrow">¶</a></p>
+            <p id="section-2.5-2.6.1"><span class="bcp14">SHOULD</span> select the highest-throughput track that fits within each set's allocated bandwidth<a href="#section-2.5-2.6.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
+<p id="section-2.5-3">See <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a> for single switching set, <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a> for multiple sets,
+and <a href="#usecase-sports" class="auto internal xref">Appendix A.3.2</a> for rank-based protection examples.<a href="#section-2.5-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1667,9 +1560,9 @@ switching set and specifies bandwidth allocation and optional ranking.<a href="#
 <div class="alignLeft art-text artwork" id="section-3-2">
 <pre>
 SWITCHING-SET-ASSIGNMENT {
-  Switching set ID (vi64),
-  Throughput threshold (vi64),
-  Set throughput fraction (vi64),
+  Switching set ID (v64),
+  Throughput threshold (v64),
+  Set throughput fraction (v64),
   Activate switching (1),
   [Set rank (8)]
 }
@@ -1686,10 +1579,14 @@ with a Parameter Error.<a href="#section-3-3.1.1" class="pilcrow">¶</a></p>
           <p id="section-3-3.2.1"><strong>Throughput threshold</strong>: Minimum throughput (kbps) required to select this track.<a href="#section-3-3.2.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-3-3.3">
-          <p id="section-3-3.3.1"><strong>Set throughput fraction</strong>: The fraction of connection throughput allocated to this switching
-set, expressed as an integer 1 &lt;= N &lt;= 10. The set receives N/10 of estimated bandwidth.
-When multiple subscriptions in the same switching set specify different fraction values,
-the relay <span class="bcp14">MUST</span> use the value from the most recently received message for that set.<a href="#section-3-3.3.1" class="pilcrow">¶</a></p>
+          <p id="section-3-3.3.1"><strong>Set throughput fraction</strong>: Relative weight for bandwidth allocation, expressed as an
+integer 1 &lt;= N &lt;= 10. Each set receives bandwidth proportional to its fraction:
+<code>target = B_total × fraction / sum_F</code>. Fractions are relative weights, not absolute
+percentages; for example, fractions of 6, 4, 3 (sum_F=13) allocate 46%, 31%, 23%
+respectively. This allows sets to be added or removed without requiring other sets to
+update their fractions. When multiple subscriptions in the same switching set specify
+different fraction values, the relay <span class="bcp14">MUST</span> use the value from the most recently received
+message for that set.<a href="#section-3-3.3.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-3-3.4">
           <p id="section-3-3.4.1"><strong>Activate switching</strong>: When set to 0, DTS switching is paused for this set (use when
@@ -1698,15 +1595,13 @@ When set to 1, the relay activates or resumes switching. Changes to the selected
 track take effect at the next group boundary.<a href="#section-3-3.4.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-3-3.5">
-          <p id="section-3-3.5.1"><strong>Set rank</strong> (optional): Relative rank for bandwidth allocation across sets, expressed as
+          <p id="section-3-3.5.1"><strong>Set rank</strong> (optional): Degradation priority when bandwidth is constrained, expressed as
 an 8-bit unsigned integer (1-255). Default is 1. Values outside this range <span class="bcp14">MUST</span> result in
-a protocol error. When all sets have the same rank (default), bandwidth is allocated
-proportionally based on fraction values. When sets have different ranks, lower values
-receive higher priority: sets are processed in rank order, with each set selecting its
-optimal rendition from the remaining bandwidth before the next set is considered. This
-means higher-priority sets may consume most or all available bandwidth, leaving reduced
-or no bandwidth for lower-priority sets. When using Set-Rank mode (different ranks),
-the fraction value is ignored unless two or more sets have the same rank value; in which case the available bandwidth is allocated between those sets according to their fractions. If each rank only holds one set, then allocation is determined entirely by rank order.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
+a protocol error. Lower values indicate higher priority (protected from degradation).
+When bandwidth is sufficient, all sets receive their fraction-based allocation. When
+bandwidth is constrained, lower-ranked sets (higher numeric value) degrade first: they
+select lower-throughput tracks or receive no bandwidth, while higher-ranked sets maintain
+their target allocation. See <a href="#allocation-algorithm" class="auto internal xref">Section 5.3</a> for details.<a href="#section-3-3.5.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>
@@ -1716,17 +1611,41 @@ the fraction value is ignored unless two or more sets have the same rank value; 
       <h2 id="name-subscriber-setup-methods">
 <a href="#section-4" class="section-number selfRef">4. </a><a href="#name-subscriber-setup-methods" class="section-name selfRef">Subscriber Setup Methods</a>
       </h2>
-<p id="section-4-1">Subscribers can create switching sets through two methods. Both result in identical
-relay behavior.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-1">Subscribers can create switching sets through two methods. Both support single or multiple
+switching sets and result in identical relay behavior. The key difference is where the
+subscriber specifies SWITCHING-SET-ASSIGNMENT:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Method</th>
+            <th class="text-left" rowspan="1" colspan="1">Track Discovery</th>
+            <th class="text-left" rowspan="1" colspan="1">Assignment In</th>
+            <th class="text-left" rowspan="1" colspan="1">Use When</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">Individual SUBSCRIBE</td>
+            <td class="text-left" rowspan="1" colspan="1">Subscriber knows tracks</td>
+            <td class="text-left" rowspan="1" colspan="1">SUBSCRIBE</td>
+            <td class="text-left" rowspan="1" colspan="1">Tracks known in advance</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">SUBSCRIBE_NAMESPACE</td>
+            <td class="text-left" rowspan="1" colspan="1">Relay discovers tracks</td>
+            <td class="text-left" rowspan="1" colspan="1">PUBLISH_OK</td>
+            <td class="text-left" rowspan="1" colspan="1">Tracks discovered dynamically</td>
+          </tr>
+        </tbody>
+      </table>
 <div id="method-subscribe">
 <section id="section-4.1">
         <h3 id="name-method-1-individual-subscri">
 <a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-method-1-individual-subscri" class="section-name selfRef">Method 1: Individual SUBSCRIBE</a>
         </h3>
-<p id="section-4.1-1">This method is used when the subscriber knows in advance which tracks to subscribe to
-and wants explicit control over switching set membership. The subscriber sends a separate
-SUBSCRIBE message for each track, including the SWITCHING-SET-ASSIGNMENT parameter to
-assign the track to a switching set.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-1">The subscriber sends a separate SUBSCRIBE message for each track, including the
+SWITCHING-SET-ASSIGNMENT parameter to assign the track to a switching set.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
 <p id="section-4.1-2">Tracks are grouped into a switching set by specifying the same Switching set ID. The
 subscriber sets activate=0 for all tracks except the last one in each set, then sets
 activate=1 on the final track to signal that the set is complete and the relay should
@@ -1735,46 +1654,47 @@ begin active track selection.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
 should receive. The fraction values across all sets should sum to 10 (representing 100%
 of available bandwidth), though the relay will normalize if they do not.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
 <p id="section-4.1-4">This example shows a subscriber creating two switching sets for a live sports broadcast:
-main camera (set 1) and sideline camera (set 2), each with two quality renditions.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+main camera (set 1, rank=1) and sideline camera (set 2, rank=2), each with two throughput
+levels. The main camera has higher priority and is protected when bandwidth is constrained.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-4.1-5">
 <pre>
 Subscriber                              Relay
   |                                       |
-  |  // Switching Set 1: Main Camera      |
+  |  // Switching Set 1: Main Camera (protected)
   |                                       |
   |  SUBSCRIBE track=main/1080p           |
   |    SWITCHING-SET-ASSIGNMENT{          |
   |      id=1, throughput=3000,           |
-  |      fraction=6, activate=0}          |
+  |      fraction=6, rank=1, activate=0}  |
   |--------------------------------------&gt;|
   |                                       |
   |  SUBSCRIBE track=main/480p            |
   |    SWITCHING-SET-ASSIGNMENT{          |
   |      id=1, throughput=800,            |
-  |      fraction=6, activate=1}          |
+  |      fraction=6, rank=1, activate=1}  |
   |--------------------------------------&gt;|
   |                                       |
   |  (Relay activates DTS for set 1)      |
   |                                       |
-  |  // Switching Set 2: Sideline Camera  |
+  |  // Switching Set 2: Sideline Camera (best effort)
   |                                       |
   |  SUBSCRIBE track=sideline/720p        |
   |    SWITCHING-SET-ASSIGNMENT{          |
   |      id=2, throughput=1500,           |
-  |      fraction=4, activate=0}          |
+  |      fraction=4, rank=2, activate=0}  |
   |--------------------------------------&gt;|
   |                                       |
   |  SUBSCRIBE track=sideline/360p        |
   |    SWITCHING-SET-ASSIGNMENT{          |
   |      id=2, throughput=400,            |
-  |      fraction=4, activate=1}          |
+  |      fraction=4, rank=2, activate=1}  |
   |--------------------------------------&gt;|
   |                                       |
   |  (Relay activates DTS for set 2)      |
   |                                       |
   |  Result: Two switching sets           |
-  |    Set 1 (main):     60% bandwidth    |
-  |    Set 2 (sideline): 40% bandwidth    |
+  |    Set 1 (main):     60%, rank=1      |
+  |    Set 2 (sideline): 40%, rank=2      |
   |                                       |
 </pre><a href="#section-4.1-5" class="pilcrow">¶</a>
 </div>
@@ -1800,42 +1720,39 @@ Subscriber                              Relay
         <h3 id="name-method-2-subscribe_namespac">
 <a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-method-2-subscribe_namespac" class="section-name selfRef">Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER</a>
         </h3>
-<p id="section-4.2-1">This method is used when the subscriber wants to receive tracks from multiple sources
-within a namespace but does not know in advance which specific sources to subscribe to.
-Instead, the subscriber specifies selection criteria via TRACK_FILTER, and the relay
-dynamically selects sources based on the specified property.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
-<p id="section-4.2-2">The relay monitors all tracks within the namespace and selects the top-N sources ranked
+<p id="section-4.2-1">The subscriber specifies selection criteria via TRACK_FILTER, and the relay dynamically
+discovers tracks. The subscriber assigns tracks to switching sets via PUBLISH_OK rather
+than SUBSCRIBE.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The relay monitors all tracks within the namespace and selects the top-N tracks ranked
 by the specified property (e.g., LOUDNESS for voice activity detection, VIEWCOUNT for
-popularity). For each selected source, the relay creates a switching set containing all
-quality renditions from that source.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
-<p id="section-4.2-3">When the relay selects a source, it sends a PUBLISH message to the subscriber. The
-subscriber responds with PUBLISH_OK containing SWITCHING-SET-ASSIGNMENT to specify the
-bandwidth allocation for that source's switching set. This allows the subscriber to
-assign different fractions to different sources based on application-level priority.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
-<p id="section-4.2-4">The selection is dynamic: as property values change, sources may be added or removed
-from the top-N set. These changes <span class="bcp14">MAY</span> occur at any time, not only at group boundaries.
-When the selection changes:<a href="#section-4.2-4" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-4.2-5">
-<li id="section-4.2-5.1">
-            <p id="section-4.2-5.1.1">For a newly selected source: Relay sends PUBLISH, subscriber responds with
-PUBLISH_OK + SWITCHING-SET-ASSIGNMENT<a href="#section-4.2-5.1.1" class="pilcrow">¶</a></p>
+popularity). For each matching track, the relay sends a PUBLISH message. The subscriber
+assigns tracks to switching sets via PUBLISH_OK, just as in <a href="#method-subscribe" class="auto internal xref">Section 4.1</a> but
+using PUBLISH_OK instead of SUBSCRIBE.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.2-3">The selection is dynamic: as property values change, tracks may be added or removed
+from the top-N set. When the selection changes:<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.2-4">
+<li id="section-4.2-4.1">
+            <p id="section-4.2-4.1.1">For a newly selected track: Relay sends PUBLISH, subscriber responds with
+PUBLISH_OK + SWITCHING-SET-ASSIGNMENT<a href="#section-4.2-4.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-4.2-5.2">
-            <p id="section-4.2-5.2.1">For a deselected source: Relay sends REQUEST_UPDATE with fwd=0<a href="#section-4.2-5.2.1" class="pilcrow">¶</a></p>
+          <li id="section-4.2-4.2">
+            <p id="section-4.2-4.2.1">For a deselected track: Relay sends REQUEST_UPDATE with fwd=0<a href="#section-4.2-4.2.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
-<p id="section-4.2-6">The subscriber is responsible for reaching a decodable state when selection changes,
-either via new group request or relay cache.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-4.2-7">
+<p id="section-4.2-5">The subscriber is responsible for grouping tracks into switching sets based on
+application-level knowledge (e.g., which tracks represent the same source at different
+throughput levels).<a href="#section-4.2-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.2-6">
 <pre>
 TRACK_FILTER {
-  Property Type (vi64),       // e.g., LOUDNESS for voice activity
-  MaxTracksSelected (vi64),   // Number of sources to select
-  Timeout (vi64),
-  [Default Set rank (8)]      // Optional: default rank for created sets (default=1)
+  Property Type (v64),       // e.g., LOUDNESS for voice activity
+  MaxTracksSelected (v64),   // Number of tracks to select
+  Timeout (v64)
 }
-</pre><a href="#section-4.2-7" class="pilcrow">¶</a>
+</pre><a href="#section-4.2-6" class="pilcrow">¶</a>
 </div>
+<p id="section-4.2-7">Note: TRACK_FILTER is defined in the MOQT SUBSCRIBE_NAMESPACE extension
+(see https://github.com/moq-wg/moq-transport/pull/1518).<a href="#section-4.2-7" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-4.2-8">
 <pre>
 Subscriber                              Relay
@@ -1871,25 +1788,7 @@ Subscriber                              Relay
 </pre><a href="#section-4.2-8" class="pilcrow">¶</a>
 </div>
 <p id="section-4.2-9">The subscriber assigns fraction values in PUBLISH_OK to control bandwidth allocation.
-Active speaker (alice) gets fraction=4 (40%), others get fraction=2 (20% each).<a href="#section-4.2-9" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="dynamic-updates">
-<section id="section-4.3">
-        <h3 id="name-dynamic-updates">
-<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-dynamic-updates" class="section-name selfRef">Dynamic Updates</a>
-        </h3>
-<p id="section-4.3-1">Subscribers can update switching set parameters at any time via REQUEST_UPDATE:<a href="#section-4.3-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-4.3-2">
-<pre>
-// Change active speaker from alice to bob
-REQUEST_UPDATE (alice subscription)
-  SWITCHING-SET-ASSIGNMENT{id=1, fraction=2}  // demote alice
-
-REQUEST_UPDATE (bob subscription)
-  SWITCHING-SET-ASSIGNMENT{id=2, fraction=4}  // promote bob
-</pre><a href="#section-4.3-2" class="pilcrow">¶</a>
-</div>
+Switching set 1 gets fraction=4 (40%), sets 2-4 get fraction=2 (20% each).<a href="#section-4.2-9" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1913,13 +1812,16 @@ SUBSCRIBE or SUBSCRIBE_NAMESPACE).<a href="#section-5-1" class="pilcrow">¶</a><
             <p id="section-5.1-2.1.1">Set of subscriptions belonging to the switching set<a href="#section-5.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-5.1-2.2">
-            <p id="section-5.1-2.2.1">Set throughput fraction (N/10 of connection bandwidth)<a href="#section-5.1-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-5.1-2.2.1">Set throughput fraction<a href="#section-5.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-5.1-2.3">
-            <p id="section-5.1-2.3.1">Activation state (active or pending)<a href="#section-5.1-2.3.1" class="pilcrow">¶</a></p>
+            <p id="section-5.1-2.3.1">Set rank<a href="#section-5.1-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-5.1-2.4">
-            <p id="section-5.1-2.4.1">Currently selected track (Forward state = 1)<a href="#section-5.1-2.4.1" class="pilcrow">¶</a></p>
+            <p id="section-5.1-2.4.1">Activation state (active or pending)<a href="#section-5.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.1-2.5">
+            <p id="section-5.1-2.5.1">Currently selected track (Forward state = 1)<a href="#section-5.1-2.5.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-5.1-3">When the relay receives a subscription with SWITCHING-SET-ASSIGNMENT:<a href="#section-5.1-3" class="pilcrow">¶</a></p>
@@ -1931,7 +1833,7 @@ SUBSCRIBE or SUBSCRIBE_NAMESPACE).<a href="#section-5-1" class="pilcrow">¶</a><
             <p id="section-5.1-4.2.1">Set Forward state to 0 for the new subscription<a href="#section-5.1-4.2.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-5.1-4.3">
-            <p id="section-5.1-4.3.1">Store the Set throughput fraction as a property of the set<a href="#section-5.1-4.3.1" class="pilcrow">¶</a></p>
+            <p id="section-5.1-4.3.1">Store the Set throughput fraction and rank as properties of the set<a href="#section-5.1-4.3.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-5.1-4.4">
             <p id="section-5.1-4.4.1">If Activate switching = 1, begin active track selection<a href="#section-5.1-4.4.1" class="pilcrow">¶</a></p>
@@ -1939,140 +1841,252 @@ SUBSCRIBE or SUBSCRIBE_NAMESPACE).<a href="#section-5-1" class="pilcrow">¶</a><
         </ol>
 </section>
 </div>
-<div id="bandwidth-allocation">
+<div id="dynamic-updates">
 <section id="section-5.2">
-        <h3 id="name-bandwidth-allocation">
-<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-bandwidth-allocation" class="section-name selfRef">Bandwidth Allocation</a>
+        <h3 id="name-dynamic-updates">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-dynamic-updates" class="section-name selfRef">Dynamic Updates</a>
         </h3>
-<p id="section-5.2-1">On a periodic bandwidth estimate update or other selection trigger (e.g., new group
-boundary), the relay:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
-<ol start="1" type="1" class="normal type-1" id="section-5.2-2">
-<li id="section-5.2-2.1">
-            <p id="section-5.2-2.1.1"><strong>Measures B_total</strong>: Estimate downstream bandwidth capacity<a href="#section-5.2-2.1.1" class="pilcrow">¶</a></p>
-</li>
-          <li id="section-5.2-2.2">
-            <p id="section-5.2-2.2.1"><strong>Allocates per set</strong>: For each switching set with fraction N:<a href="#section-5.2-2.2.1" class="pilcrow">¶</a></p>
-<ul class="normal">
-<li class="normal" id="section-5.2-2.2.2.1">
-                <p id="section-5.2-2.2.2.1.1">B_set = B_total × N / 10<a href="#section-5.2-2.2.2.1.1" class="pilcrow">¶</a></p>
-</li>
-            </ul>
-</li>
-          <li id="section-5.2-2.3">
-            <p id="section-5.2-2.3.1"><strong>Selects rendition</strong>: Within each set, select the highest-quality rendition
-with throughput threshold &lt;= B_set<a href="#section-5.2-2.3.1" class="pilcrow">¶</a></p>
-</li>
-          <li id="section-5.2-2.4">
-            <p id="section-5.2-2.4.1"><strong>Forwards groups</strong>: Set Forward state = 1 for selected track, 0 for others<a href="#section-5.2-2.4.1" class="pilcrow">¶</a></p>
-</li>
-        </ol>
-<div class="alignLeft art-text artwork" id="section-5.2-3">
+<p id="section-5.2-1">Subscribers can update switching set parameters at any time via REQUEST_UPDATE. The relay
+processes these updates and adjusts bandwidth allocation accordingly.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.2-2">
 <pre>
-┌──────────────────────────────────────────────────────────────────────┐
-│                     Relay Adaptation Algorithm                       │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│                    +---------------------------+                     │
-│                    | 1. Measure B_total        |                     │
-│                    +-------------+-------------+                     │
-│                                  |                                   │
-│                                  v                                   │
-│                    +---------------------------+                     │
-│                    | 2. For each switching set |                     │
-│                    |    B_set = B_total × N/10 |                     │
-│                    +-------------+-------------+                     │
-│                                  |                                   │
-│                                  v                                   │
-│                    +---------------------------+                     │
-│                    | 3. Select best rendition  |                     │
-│                    |    where throughput&lt;=B_set|                     │
-│                    +-------------+-------------+                     │
-│                                  |                                   │
-│                                  v                                   │
-│                    +---------------------------+                     │
-│                    | 4. Forward selected groups|                     │
-│                    +---------------------------+                     │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
-</pre><a href="#section-5.2-3" class="pilcrow">¶</a>
+// Reallocate bandwidth: reduce set 1 from 40% to 20%, increase set 2 from 20% to 40%
+REQUEST_UPDATE (set 1 subscription)
+  SWITCHING-SET-ASSIGNMENT{id=1, fraction=2}
+
+REQUEST_UPDATE (set 2 subscription)
+  SWITCHING-SET-ASSIGNMENT{id=2, fraction=4}
+</pre><a href="#section-5.2-2" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
-<div id="allocation-modes">
+<div id="allocation-algorithm">
 <section id="section-5.3">
-        <h3 id="name-allocation-modes">
-<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-allocation-modes" class="section-name selfRef">Allocation Modes</a>
+        <h3 id="name-bandwidth-allocation">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-bandwidth-allocation" class="section-name selfRef">Bandwidth Allocation</a>
         </h3>
-<p id="section-5.3-1">Bandwidth allocation across multiple switching sets is determined by the Set rank parameter:<a href="#section-5.3-1" class="pilcrow">¶</a></p>
-<div id="equal-allocation-default">
-<section id="section-5.3.1">
-          <h4 id="name-equal-allocation-default">
-<a href="#section-5.3.1" class="section-number selfRef">5.3.1. </a><a href="#name-equal-allocation-default" class="section-name selfRef">Equal Allocation (Default)</a>
-          </h4>
-<p id="section-5.3.1-1">When all sets have the same rank (default rank=1), each set receives bandwidth proportional
-to its fraction:<a href="#section-5.3.1-1" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.3.1-2">
+<p id="section-5.3-1">The relay maintains:<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-5.3-2.1">
+            <p id="section-5.3-2.1.1"><code>B_total</code>: Estimated downstream bandwidth capacity for the subscriber connection<a href="#section-5.3-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-5.3-2.2">
+            <p id="section-5.3-2.2.1"><code>sum_F</code>: Sum of all set fractions, updated incrementally as subscriptions are added or removed<a href="#section-5.3-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-5.3-3">On a periodic bandwidth estimate update or other selection trigger (e.g., new group
+boundary), the relay executes the following algorithm:<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.3-4">
 <pre>
-B_set_i = B_total × fraction_i / 10
-</pre><a href="#section-5.3.1-2" class="pilcrow">¶</a>
+for each set in rank order (ascending):
+  set.target = B_total × set.fraction / sum_F
+  set.allocated = min(set.target, B_remaining)
+  set.selected = best track where throughput &lt;= set.allocated
+  B_remaining -= set.selected.throughput
+</pre><a href="#section-5.3-4" class="pilcrow">¶</a>
 </div>
-<p id="section-5.3.1-3">All sets degrade proportionally when bandwidth is constrained.<a href="#section-5.3.1-3" class="pilcrow">¶</a></p>
+<p id="section-5.3-5">Finally, set Forward state = 1 for each selected track, 0 for others. The rank ordering
+ensures higher-priority sets receive their target allocation first; lower-priority sets
+absorb any bandwidth shortfall.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.3-6">
+<pre>
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Relay Adaptation Algorithm                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Precondition: sum_F maintained incrementally on subscribe/remove   │
+│                                                                     │
+│             +----------------------------------------+              │
+│             | Sort sets by rank (ascending)          |              │
+│             | B_remaining = B_total                  |              │
+│             +-------------------+--------------------+              │
+│                                 |                                   │
+│                                 v                                   │
+│             +----------------------------------------+              │
+│             | for each set (in rank order):          |&lt;-----+       │
+│             |   target = B_total × fraction / sum_F  |      |       │
+│             |   allocated = min(target, B_remaining) |      |       │
+│             |   selected = best track where          |      |       │
+│             |              throughput &lt;= allocated   |      |       │
+│             |   B_remaining -= selected throughput   |      |       │
+│             +-------------------+--------------------+      |       │
+│                                 |                           |       │
+│                                 v                           |       │
+│                    +--------------------+                   |       │
+│                    | More sets?         |---YES-------------+       │
+│                    +---------+----------+                           │
+│                              | NO                                   │
+│                              v                                      │
+│                    +--------------------+                           │
+│                    | Forward selected   |                           │
+│                    | tracks             |                           │
+│                    +--------------------+                           │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-5.3-6" class="pilcrow">¶</a>
+</div>
 </section>
 </div>
-<div id="set-rank-mode">
-<section id="section-5.3.2">
-          <h4 id="name-set-rank-mode">
-<a href="#section-5.3.2" class="section-number selfRef">5.3.2. </a><a href="#name-set-rank-mode" class="section-name selfRef">Set-Rank Mode</a>
+<div id="fraction-and-rank-interaction">
+<section id="section-5.4">
+        <h3 id="name-fraction-and-rank-interacti">
+<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-fraction-and-rank-interacti" class="section-name selfRef">Fraction and Rank Interaction</a>
+        </h3>
+<p id="section-5.4-1"><strong>Fraction</strong> determines target bandwidth allocation. Each set's target is:<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.4-2">
+<pre>
+set.target = B_total × set.fraction / sum_F
+</pre><a href="#section-5.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-5.4-3"><strong>Rank</strong> determines allocation order when bandwidth is constrained. Sets are processed
+in rank order (lower value = higher priority). Each set receives:<a href="#section-5.4-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.4-4">
+<pre>
+set.allocated = min(set.target, B_remaining)
+</pre><a href="#section-5.4-4" class="pilcrow">¶</a>
+</div>
+<p id="section-5.4-5">When bandwidth is sufficient, all sets receive <code>allocated = target</code>. When bandwidth is
+constrained, higher-priority sets (lower rank value) are protected while lower-priority
+sets receive less than their target or nothing.<a href="#section-5.4-5" class="pilcrow">¶</a></p>
+<div id="allocation-examples">
+<section id="section-5.4.1">
+          <h4 id="name-allocation-examples">
+<a href="#section-5.4.1" class="section-number selfRef">5.4.1. </a><a href="#name-allocation-examples" class="section-name selfRef">Allocation Examples</a>
           </h4>
-<p id="section-5.3.2-1">When sets have different rank values, sets are processed in rank order (lower value =
-higher priority). Each set selects the best rendition that fits within the remaining
-bandwidth before moving to the next set. This ensures higher-ranked sets receive their
-optimal rendition before lower-ranked sets consume bandwidth.<a href="#section-5.3.2-1" class="pilcrow">¶</a></p>
+<div id="example-1-sufficient-bandwidth-all-sets-receive-target">
+<section id="section-5.4.1.1">
+            <h5 id="name-example-1-sufficient-bandwi">
+<a href="#section-5.4.1.1" class="section-number selfRef">5.4.1.1. </a><a href="#name-example-1-sufficient-bandwi" class="section-name selfRef">Example 1: Sufficient Bandwidth (all sets receive target)</a>
+            </h5>
+<div class="alignLeft art-text artwork" id="section-5.4.1.1-1">
+<pre>
+Set A: fraction=6, rank=1, tracks at 3000/1500 kbps
+Set B: fraction=2, rank=2, tracks at 1000/500 kbps
+Set C: fraction=2, rank=2, tracks at 1000/500 kbps
+
+B_total = 5000 kbps, sum_F = 10, B_remaining = 5000
+
+Set A (rank=1): target = 5000×6/10 = 3000
+                allocated = min(3000, 5000) = 3000 → selects 3000 kbps
+                B_remaining = 5000 - 3000 = 2000
+Set B (rank=2): target = 5000×2/10 = 1000
+                allocated = min(1000, 2000) = 1000 → selects 1000 kbps
+                B_remaining = 2000 - 1000 = 1000
+Set C (rank=2): target = 5000×2/10 = 1000
+                allocated = min(1000, 1000) = 1000 → selects 1000 kbps
+                B_remaining = 1000 - 1000 = 0
+
+Result: All sets receive allocated = target
+</pre><a href="#section-5.4.1.1-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-2-constrained-bandwidth-low-priority-degrades">
+<section id="section-5.4.1.2">
+            <h5 id="name-example-2-constrained-bandw">
+<a href="#section-5.4.1.2" class="section-number selfRef">5.4.1.2. </a><a href="#name-example-2-constrained-bandw" class="section-name selfRef">Example 2: Constrained Bandwidth (low-priority degrades)</a>
+            </h5>
+<p id="section-5.4.1.2-1">Same setup, less bandwidth:<a href="#section-5.4.1.2-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.4.1.2-2">
+<pre>
+B_total = 4000 kbps, sum_F = 10, B_remaining = 4000
+
+Set A (rank=1): target = 2400, allocated = min(2400, 4000) = 2400
+                → selects 1500 kbps, B_remaining = 2500
+Set B (rank=2): target = 800, allocated = min(800, 2500) = 800
+                → selects 500 kbps, B_remaining = 2000
+Set C (rank=2): target = 800, allocated = min(800, 2000) = 800
+                → selects 500 kbps, B_remaining = 1500
+
+Result: All sets receive allocated = target, but select lower throughput tracks
+</pre><a href="#section-5.4.1.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-3-severely-constrained-low-priority-dropped">
+<section id="section-5.4.1.3">
+            <h5 id="name-example-3-severely-constrai">
+<a href="#section-5.4.1.3" class="section-number selfRef">5.4.1.3. </a><a href="#name-example-3-severely-constrai" class="section-name selfRef">Example 3: Severely Constrained (low-priority dropped)</a>
+            </h5>
+<div class="alignLeft art-text artwork" id="section-5.4.1.3-1">
+<pre>
+B_total = 2000 kbps, sum_F = 10, B_remaining = 2000
+
+Set A (rank=1): target = 1200, allocated = min(1200, 2000) = 1200
+                → selects 1500 kbps, B_remaining = 500
+Set B (rank=2): target = 400, allocated = min(400, 500) = 400
+                → selects 500 kbps, B_remaining = 0
+Set C (rank=2): target = 400, allocated = min(400, 0) = 0
+                → no track selected
+
+Result: Set C receives allocated &lt; target (dropped)
+</pre><a href="#section-5.4.1.3-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-4-equal-rank-proportional-degradation">
+<section id="section-5.4.1.4">
+            <h5 id="name-example-4-equal-rank-propor">
+<a href="#section-5.4.1.4" class="section-number selfRef">5.4.1.4. </a><a href="#name-example-4-equal-rank-propor" class="section-name selfRef">Example 4: Equal Rank (proportional degradation)</a>
+            </h5>
+<p id="section-5.4.1.4-1">When all sets share the same rank, they degrade together:<a href="#section-5.4.1.4-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-5.4.1.4-2">
+<pre>
+Set A: fraction=5, rank=1, tracks at 2000/1000/500 kbps
+Set B: fraction=3, rank=1, tracks at 1500/750 kbps
+Set C: fraction=2, rank=1, tracks at 800/400 kbps
+
+B_total = 3000 kbps, sum_F = 10, B_remaining = 3000
+
+Set A (rank=1): target = 1500, allocated = min(1500, 3000) = 1500
+                → selects 1000 kbps, B_remaining = 2000
+Set B (rank=1): target = 900, allocated = min(900, 2000) = 900
+                → selects 750 kbps, B_remaining = 1250
+Set C (rank=1): target = 600, allocated = min(600, 1250) = 600
+                → selects 400 kbps, B_remaining = 850
+
+Result: All sets receive allocated = target, degrade proportionally
+</pre><a href="#section-5.4.1.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
 </section>
 </div>
 </section>
 </div>
 <div id="implementation-pseudocode">
-<section id="section-5.4">
+<section id="section-5.5">
         <h3 id="name-implementation-pseudocode">
-<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-implementation-pseudocode" class="section-name selfRef">Implementation Pseudocode</a>
+<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-implementation-pseudocode" class="section-name selfRef">Implementation Pseudocode</a>
         </h3>
-<div class="alignLeft art-text artwork" id="section-5.4-1">
+<div class="alignLeft art-text artwork" id="section-5.5-1">
 <pre>
-function select_renditions(B_total, sets[]):
+// sum_F maintained incrementally on subscribe/remove
+function select_tracks(B_total, sum_F, sets[]):
+  sort sets by rank (ascending)
+  B_remaining = B_total
 
-  if all sets have same rank:  // Equal allocation
-    for each set in sets:
-      B_set = B_total * set.fraction / 10
-      set.selected = first rendition where throughput &lt;= B_set
-
-  else:  // Set-Rank mode
-    remaining = B_total
-    sort sets by rank (ascending)
-    for each set in sets:
-      // Select best rendition that fits in remaining bandwidth
-      set.selected = NONE
-      for each rendition in set.renditions (highest to lowest quality):
-        if rendition.throughput &lt;= remaining:
-          set.selected = rendition
-          remaining -= rendition.throughput
-          break
+  for each set in sorted order:
+    set.target    = B_total * set.fraction / sum_F
+    set.allocated = min(set.target, B_remaining)
+    set.selected  = best track where throughput &lt;= set.allocated
+    B_remaining  -= set.selected.throughput
 
   return sets[].selected
-</pre><a href="#section-5.4-1" class="pilcrow">¶</a>
+</pre><a href="#section-5.5-1" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
 <div id="bandwidth-estimation">
-<section id="section-5.5">
+<section id="section-5.6">
         <h3 id="name-bandwidth-estimation">
-<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-bandwidth-estimation" class="section-name selfRef">Bandwidth Estimation</a>
+<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-bandwidth-estimation" class="section-name selfRef">Bandwidth Estimation</a>
         </h3>
-<p id="section-5.5-1">The relay <span class="bcp14">MUST</span> maintain a bandwidth estimate (B_total) for each downstream subscriber.
+<p id="section-5.6-1">The relay <span class="bcp14">MUST</span> maintain a bandwidth estimate (B_total) for each downstream subscriber.
 This estimate is obtained periodically from the QUIC stack (e.g., congestion window,
 pacing rate, smoothed RTT) and <span class="bcp14">MAY</span> be supplemented by external sources such as SCONE
-<span>[<a href="#I-D.ietf-scone-protocol" class="cite xref">I-D.ietf-scone-protocol</a>]</span> or application-level feedback. The estimate drives rendition
-selection decisions for all switching sets associated with that subscriber<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<span>[<a href="#I-D.ietf-scone-protocol" class="cite xref">I-D.ietf-scone-protocol</a>]</span> or application-level feedback. The estimate drives track
+selection decisions for all switching sets associated with that subscriber<a href="#section-5.6-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2091,7 +2105,7 @@ that includes architecture diagrams and extended requirements.<a href="#section-
 <a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-example-2-track-abr" class="section-name selfRef">Example: 2-Track ABR</a>
         </h3>
 <p id="section-6.1-1">This example demonstrates the simplest DTS scenario: a single switching set with two
-quality renditions from one source. See <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a> for the full use case
+tracks at different throughput levels from one source. See <a href="#usecase-abr" class="auto internal xref">Appendix A.1.1</a> for the full use case
 description and architecture.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
 <p id="section-6.1-2"><strong>Setup</strong>: Video at 1080p (2000 kbps) and 480p (500 kbps), fraction=10<a href="#section-6.1-2" class="pilcrow">¶</a></p>
 <p id="section-6.1-3">The subscriber creates a single switching set by sending two SUBSCRIBE messages with
@@ -2101,13 +2115,15 @@ Since this is the only switching set, fraction=10 allocates 100% of bandwidth to
 <div class="alignLeft art-text artwork" id="section-6.1-4">
 <pre>
 Subscriber subscribes to both tracks:
-  SUBSCRIBE (video, 1080p) SWITCHING-SET-ASSIGNMENT{id=1, throughput=2000, fraction=10}
-  SUBSCRIBE (video, 480p)  SWITCHING-SET-ASSIGNMENT{id=1, throughput=500, activate=1}
+  SUBSCRIBE (video, 1080p)
+    SWITCHING-SET-ASSIGNMENT{id=1, throughput=2000, fraction=10}
+  SUBSCRIBE (video, 480p)
+    SWITCHING-SET-ASSIGNMENT{id=1, throughput=500, activate=1}
 </pre><a href="#section-6.1-4" class="pilcrow">¶</a>
 </div>
 <p id="section-6.1-5">Once the relay receives the second subscription with activate=1, it begins active track
 selection. The relay evaluates the bandwidth estimate and selects the highest-quality
-rendition whose throughput threshold fits within the allocated bandwidth.<a href="#section-6.1-5" class="pilcrow">¶</a></p>
+track whose throughput threshold fits within the allocated bandwidth.<a href="#section-6.1-5" class="pilcrow">¶</a></p>
 <p id="section-6.1-6">When bandwidth is 3 Mbps, the relay calculates B_set = 3000 kbps. The 1080p track
 requires 2000 kbps, which fits, so the relay selects 1080p and sets Forward=1 for that
 track. The 480p track gets Forward=0.<a href="#section-6.1-6" class="pilcrow">¶</a></p>
@@ -2164,10 +2180,11 @@ participants are displayed in a grid layout, each receiving the same share of ba
 See <a href="#usecase-videoconf" class="auto internal xref">Appendix A.2.1</a> for the full use case description including active speaker
 priority handling.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
 <p id="section-6.2-2"><strong>Setup</strong>: Each participant has 720p (800 kbps) and 360p (300 kbps), equal fractions<a href="#section-6.2-2" class="pilcrow">¶</a></p>
-<p id="section-6.2-3">The subscriber uses SUBSCRIBE_NAMESPACE with TRACK_FILTER to request the top 4 participants.
-The relay selects sources and sends PUBLISH for each. The subscriber responds with PUBLISH_OK
-containing SWITCHING-SET-ASSIGNMENT with fraction=2 for each, allocating 20% of bandwidth
-per participant. The remaining 20% provides headroom for audio and protocol overhead.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<p id="section-6.2-3">The subscriber uses SUBSCRIBE_NAMESPACE with TRACK_FILTER to request the top 4 tracks by
+LOUDNESS. The relay sends PUBLISH for each matching track. The subscriber assigns tracks
+to switching sets via PUBLISH_OK with SWITCHING-SET-ASSIGNMENT, using fraction=2 for each
+set (20% of bandwidth per participant). The remaining 20% provides headroom for audio and
+protocol overhead.<a href="#section-6.2-3" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-6.2-4">
 <pre>
 Subscriber                              Relay
@@ -2238,36 +2255,37 @@ At 2 Mbps total:
         <h3 id="name-example-vr-headset-foveated">
 <a href="#section-6.3" class="section-number selfRef">6.3. </a><a href="#name-example-vr-headset-foveated" class="section-name selfRef">Example: VR Headset / Foveated Rendering</a>
         </h3>
-<p id="section-6.3-1">This example demonstrates dynamic bandwidth reallocation based on user interaction. In
-foveated rendering, the tile where the user is looking (gaze tile) receives higher quality
-than peripheral tiles. As the user's gaze moves, bandwidth allocation shifts in real-time.
-See <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a> for the full use case description including multi-layer VR environments.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
-<p id="section-6.3-2"><strong>Setup</strong>: 5 tiles, each with hi (1 Mbps) and lo (200 kbps). Gaze tile gets fraction=4,
-peripheral tiles get fraction=1 each.<a href="#section-6.3-2" class="pilcrow">¶</a></p>
-<p id="section-6.3-3">The subscriber uses individual SUBSCRIBE messages since the tile layout is known in advance.
-Each tile becomes a separate switching set with two renditions (hi and lo). The gaze tile
-initially receives fraction=4 (40% of bandwidth), while each peripheral tile receives
-fraction=1 (10% each), leaving 20% headroom.<a href="#section-6.3-3" class="pilcrow">¶</a></p>
+<p id="section-6.3-1">This example demonstrates dynamic bandwidth reallocation based on user interaction.
+In foveated rendering, the tile where the user is looking (gaze tile) receives higher
+quality than peripheral tiles. As the user's gaze moves, bandwidth allocation shifts
+in real-time. See <a href="#usecase-vr" class="auto internal xref">Appendix A.2.3</a> for the full use case description.<a href="#section-6.3-1" class="pilcrow">¶</a></p>
+<p id="section-6.3-2"><strong>Setup</strong>: 5 tiles, each with hi (1 Mbps) and lo (200 kbps). Gaze tile gets fraction=4
+and rank=1 (protected); peripheral tiles get fraction=1 and rank=2 (best effort).<a href="#section-6.3-2" class="pilcrow">¶</a></p>
+<p id="section-6.3-3">The subscriber uses individual SUBSCRIBE messages since the tile layout is known in
+advance. Each tile becomes a separate switching set with two tracks (hi and lo). The
+gaze tile is protected with rank=1, ensuring it maintains quality when bandwidth drops.<a href="#section-6.3-3" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-6.3-4">
 <pre>
 Subscriber                              Relay
   |                                       |
-  |  // Subscribe to all 5 tiles          |
+  |  // Peripheral tiles (rank=2)         |
   |  SUBSCRIBE (tile1, hi)                |
   |    SWITCHING-SET-ASSIGNMENT{          |
-  |      id=1, throughput=1000, fraction=1}|
+  |      id=1, throughput=1000,           |
+  |      fraction=1, rank=2}              |
   |--------------------------------------&gt;|
   |  SUBSCRIBE (tile1, lo)                |
   |    SWITCHING-SET-ASSIGNMENT{          |
   |      id=1, throughput=200, activate=1}|
   |--------------------------------------&gt;|
   |                                       |
-  |  ... (tiles 2, 4, 5 similarly, f=1)   |
+  |  ... (tiles 2, 4, 5 similarly)        |
   |                                       |
-  |  // Tile 3 is gaze tile, gets f=4    |
+  |  // Gaze tile (rank=1, protected)     |
   |  SUBSCRIBE (tile3, hi)                |
   |    SWITCHING-SET-ASSIGNMENT{          |
-  |      id=3, throughput=1000, fraction=4}|
+  |      id=3, throughput=1000,           |
+  |      fraction=4, rank=1}              |
   |--------------------------------------&gt;|
   |  SUBSCRIBE (tile3, lo)                |
   |    SWITCHING-SET-ASSIGNMENT{          |
@@ -2276,56 +2294,65 @@ Subscriber                              Relay
   |                                       |
 </pre><a href="#section-6.3-4" class="pilcrow">¶</a>
 </div>
-<p id="section-6.3-5">At 3 Mbps, the relay allocates bandwidth based on fractions. The gaze tile (fraction=4)
-gets 1200 kbps and selects hi quality. Peripheral tiles (fraction=1) get 300 kbps each
-and select lo quality.<a href="#section-6.3-5" class="pilcrow">¶</a></p>
+<p id="section-6.3-5">At 3 Mbps with sufficient bandwidth, all tiles receive their target allocation:<a href="#section-6.3-5" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-6.3-6">
 <pre>
-At 3 Mbps total:
-  Gaze tile (fraction=4):    B = 3000 × 4/10 = 1200 kbps → hi (1 Mbps)
-  Peripheral (fraction=1):   B = 3000 × 1/10 = 300 kbps  → lo (200 kbps)
+At 3 Mbps (sufficient): sum_F=8, B_remaining=3000
+  Gaze (rank=1):   target=1500, allocated=1500 → hi (1 Mbps)
+                   B_remaining=2000
+  Peripheral×4:    target=375 each, allocated=375 → lo (200 kbps)
 </pre><a href="#section-6.3-6" class="pilcrow">¶</a>
 </div>
-<p id="section-6.3-7">When the user's gaze shifts from tile 3 to tile 5, the subscriber sends REQUEST_UPDATE
-messages to swap the fractions. The relay immediately reallocates bandwidth, promoting
-tile 5 to hi quality and demoting tile 3 to lo quality.<a href="#section-6.3-7" class="pilcrow">¶</a></p>
+<p id="section-6.3-7">When bandwidth drops, the gaze tile (rank=1) is protected while peripheral tiles
+absorb the shortfall:<a href="#section-6.3-7" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-6.3-8">
 <pre>
-When gaze shifts from tile 3 to tile 5:
-  REQUEST_UPDATE (tile 3) fraction=1  // demote
-  REQUEST_UPDATE (tile 5) fraction=4  // promote
-
-Relay immediately reallocates:
-  Tile 5: 1200 kbps → hi
-  Tile 3: 300 kbps → lo
+At 1.5 Mbps (constrained): sum_F=8, B_remaining=1500
+  Gaze (rank=1):   target=750, allocated=750 → lo (200 kbps fits)
+                   B_remaining=1300
+  Peripheral×4:    target=188 each → lo (200 kbps)
+  Result: Gaze processed first, guaranteed its allocation
 </pre><a href="#section-6.3-8" class="pilcrow">¶</a>
 </div>
-<div class="alignLeft art-text artwork" id="section-6.3-9">
+<p id="section-6.3-9">When the user's gaze shifts from tile 3 to tile 5, the subscriber sends
+REQUEST_UPDATE messages to swap both fraction and rank:<a href="#section-6.3-9" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6.3-10">
 <pre>
-┌──────────────────────────────────────────────────────────────────────┐
-│                    VR Foveated Rendering                             │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  360° View with Gaze at Tile 3:                                      │
-│                                                                      │
-│  ┌──────┐ ┌──────┐ ┌──────────┐ ┌──────┐ ┌──────┐                    │
-│  │Tile 1│ │Tile 2│ │  Tile 3  │ │Tile 4│ │Tile 5│                    │
-│  │  lo  │ │  lo  │ │   hi     │ │  lo  │ │  lo  │                    │
-│  │ f=1  │ │ f=1  │ │  f=4     │ │ f=1  │ │ f=1  │                    │
-│  └──────┘ └──────┘ └──────────┘ └──────┘ └──────┘                    │
-│                      [GAZE]                                          │
-│                                                                      │
-│  Gaze shifts to Tile 5 → REQUEST_UPDATE to swap fractions            │
-│                                                                      │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────────┐                    │
-│  │Tile 1│ │Tile 2│ │Tile 3│ │Tile 4│ │  Tile 5  │                    │
-│  │  lo  │ │  lo  │ │  lo  │ │  lo  │ │   hi     │                    │
-│  │ f=1  │ │ f=1  │ │ f=1  │ │ f=1  │ │  f=4     │                    │
-│  └──────┘ └──────┘ └──────┘ └──────┘ └──────────┘                    │
-│                                         [GAZE]                       │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
-</pre><a href="#section-6.3-9" class="pilcrow">¶</a>
+When gaze shifts from tile 3 to tile 5:
+  REQUEST_UPDATE (tile 3)
+    SWITCHING-SET-ASSIGNMENT{fraction=1, rank=2}  // demote
+  REQUEST_UPDATE (tile 5)
+    SWITCHING-SET-ASSIGNMENT{fraction=4, rank=1}  // promote
+
+Relay reallocates: tile 5 now protected, tile 3 best-effort
+</pre><a href="#section-6.3-10" class="pilcrow">¶</a>
+</div>
+<div class="alignLeft art-text artwork" id="section-6.3-11">
+<pre>
+┌─────────────────────────────────────────────────────────────────────┐
+│                    VR Foveated Rendering                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  360° View with Gaze at Tile 3 (protected, rank=1):                 │
+│                                                                     │
+│  ┌──────┐ ┌──────┐ ┌──────────┐ ┌──────┐ ┌──────┐                   │
+│  │Tile 1│ │Tile 2│ │  Tile 3  │ │Tile 4│ │Tile 5│                   │
+│  │  lo  │ │  lo  │ │   hi     │ │  lo  │ │  lo  │                   │
+│  │f=1,r2│ │f=1,r2│ │ f=4,r1   │ │f=1,r2│ │f=1,r2│                   │
+│  └──────┘ └──────┘ └──────────┘ └──────┘ └──────┘                   │
+│                      [GAZE]                                         │
+│                                                                     │
+│  Gaze shifts to Tile 5 → REQUEST_UPDATE swaps fraction and rank     │
+│                                                                     │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────────┐                   │
+│  │Tile 1│ │Tile 2│ │Tile 3│ │Tile 4│ │  Tile 5  │                   │
+│  │  lo  │ │  lo  │ │  lo  │ │  lo  │ │   hi     │                   │
+│  │f=1,r2│ │f=1,r2│ │f=1,r2│ │f=1,r2│ │ f=4,r1   │                   │
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────────┘                   │
+│                                         [GAZE]                      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+</pre><a href="#section-6.3-11" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
@@ -2373,25 +2400,27 @@ Subscriber                              Relay
   |                                       |
 </pre><a href="#section-6.4-4" class="pilcrow">¶</a>
 </div>
-<p id="section-6.4-5">Because the sets have different ranks, the relay uses Set-Rank mode instead of equal
-allocation. It processes sets in rank order, giving higher-ranked sets their optimal
-rendition before allocating remaining bandwidth to lower-ranked sets.<a href="#section-6.4-5" class="pilcrow">¶</a></p>
+<p id="section-6.4-5">Sets are processed in rank order; the main camera (rank=1) receives its allocation first,
+and the replay camera (rank=2) absorbs any shortfall.<a href="#section-6.4-5" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-6.4-6">
 <pre>
-At 5 Mbps (sufficient bandwidth):
-  Process rank=1 (main): 3000 &lt;= 5000 → select 1080p, remaining = 2000
-  Process rank=2 (replay): 1500 &lt;= 2000 → select 720p
-  Forward: main@1080p, replay@720p
+At 5 Mbps (sufficient): sum_F=10, B_remaining=5000
+  main (rank=1):   target=3000, allocated=min(3000,5000)=3000 → 1080p
+                   B_remaining=2000
+  replay (rank=2): target=2000, allocated=min(2000,2000)=2000 → 720p
+  Result: Both receive allocated = target
 
-At 3.5 Mbps (constrained):
-  Process rank=1 (main): 3000 &lt;= 3500 → select 1080p, remaining = 500
-  Process rank=2 (replay): 1500 &gt; 500, 400 &lt;= 500 → select 360p
-  Forward: main@1080p, replay@360p  (main protected, replay degraded)
+At 3.5 Mbps (constrained): sum_F=10, B_remaining=3500
+  main (rank=1):   target=2100, allocated=min(2100,3500)=2100 → 1080p (3000)
+                   B_remaining=500
+  replay (rank=2): target=1400, allocated=min(1400,500)=500 → 360p (400)
+  Result: replay receives allocated &lt; target (degraded)
 
-At 2 Mbps (severely constrained):
-  Process rank=1 (main): 3000 &gt; 2000, 800 &lt;= 2000 → select 480p, remaining = 1200
-  Process rank=2 (replay): 1500 &gt; 1200, 400 &lt;= 1200 → select 360p
-  Forward: main@480p, replay@360p  (both degraded, but main got priority)
+At 2 Mbps (severely constrained): sum_F=10, B_remaining=2000
+  main (rank=1):   target=1200, allocated=min(1200,2000)=1200 → 480p (800)
+                   B_remaining=1200
+  replay (rank=2): target=800, allocated=min(800,1200)=800 → 720p won't fit → 400
+  Result: Both degraded, main processed first
 </pre><a href="#section-6.4-6" class="pilcrow">¶</a>
 </div>
 <div class="alignLeft art-text artwork" id="section-6.4-7">
@@ -2963,7 +2992,7 @@ and allocates remaining capacity to situational cameras.<a href="#appendix-A.3.3
 <div dir="auto" class="left"><span class="org">Akamai</span></div>
 <div class="email">
 <span>Email:</span>
-<a href="mailto:2762250+wilaw@users.noreply.github.com" class="email">2762250+wilaw@users.noreply.github.com</a>
+<a href="mailto:wilaw@akamai.com" class="email">wilaw@akamai.com</a>
 </div>
 </address>
 <address class="vcard">
