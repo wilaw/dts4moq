@@ -24,7 +24,7 @@ venue:
 author:
   - fullname: Will Law
     organization: Akamai
-    email: "2762250+wilaw@users.noreply.github.com"
+    email: "wilaw@akamai.com"
   - name: Ian Swett
     organization: Google
     email: ianswett@google.com
@@ -59,14 +59,12 @@ informative:
 
 This document defines Dynamic Track Switching (DTS) for Media over QUIC Transport (MOQT).
 DTS enables relays to dynamically select which track to forward from a switching set—a
-collection of time-aligned tracks representing the same content at different throughput levels,
-typically from a single source.
+collection of time-aligned tracks representing the same content at different throughput levels.
 The relay selects exactly one track per switching set at each group boundary based on
 available downstream bandwidth. Subscribers use the SWITCHING-SET-ASSIGNMENT parameter to
-group subscriptions into switching sets. When multiple switching sets are present,
-subscribers specify relative bandwidth allocation via Set throughput fraction, enabling
-the relay adaptation algorithm to allocate bandwidth across sets before selecting
-tracks within each set.
+group subscriptions into switching sets and specify bandwidth allocation via fraction
+(relative weight) and rank (degradation priority). Fraction determines target bandwidth
+allocation; rank determines which sets degrade first when bandwidth is constrained.
 
 
 --- middle
@@ -82,12 +80,10 @@ improves user experience. These include adaptive bitrate streaming for live vide
 conferencing with multiple participants at varying throughput levels, VR/AR streaming with
 gaze-based quality allocation, and hybrid scenarios combining adaptive streams with
 fixed-bandwidth overlays such as cloud gaming HUDs or sports statistics. These use cases
-(detailed in {{usecase-appendix}}) drive the requirements for originla publishers, end subscribers,
-and relays specified in this document.
+(detailed in {{usecase-appendix}}) drive the requirements for originla publishers, end subscribers, and relays specified in this document.
 
 A switching set is a collection of MoQ tracks representing the same content encoded at
-different throughput levels, typically from a single source. Tracks within a switching set are time-aligned at
-group boundaries, allowing the relay to switch between tracks without disrupting
+different throughput levels, typically from a single source. Tracks within a switching set are time-aligned at group boundaries, allowing the relay to switch between tracks without disrupting
 errors. The relay selects exactly one track per switching set to forward at any given time.
 
 Subscribers can create switching sets through two methods:
@@ -100,9 +96,11 @@ Subscribers can create switching sets through two methods:
   selecting the most popular streams). The relay forwards matching tracks and the
   subscriber assigns them to switching sets via PUBLISH_OK.
 
-Both methods result in the same relay behavior: the relay processes one or more switching
-sets, allocates bandwidth based on Set throughput fraction, and selects the best track
-per set at each group boundary.
+Both methods result in the same relay behavior: the relay processes switching sets,
+allocates bandwidth based on fraction and rank, and selects the best track per set
+at each group boundary. Fraction determines target bandwidth allocation; rank determines
+degradation priority when bandwidth is constrained, lower-ranked sets degrade first while
+higher-ranked sets are protected.
 
 # Requirements
 
@@ -121,9 +119,7 @@ A **throughput level** refers to the bandwidth requirement of a track within a s
 Tracks in a switching set are distinguished by their throughput requirements, allowing the
 relay to select an appropriate track based on available bandwidth.
 
-In media applications, tracks within a switching set are commonly called **renditions**,
-representing different quality levels (e.g., 1080p at 5 Mbps, 720p at 2 Mbps). Each rendition
-corresponds to exactly one MoQ track.
+In media applications carrying video at various qualites, tracks within a switching set are commonly called **renditions**, representing different quality levels (e.g., 1080p at 5 Mbps, 720p at 2 Mbps). Each rendition corresponds to exactly one MoQ track.
 
 ~~~
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -158,30 +154,6 @@ corresponds to exactly one MoQ track.
 └──────────────────────────────────────────────────────────────────────┘
 ~~~
 
-For scenarios with multiple independent sources, each source has its own switching set.
-The relay manages bandwidth allocation across all switching sets while selecting one
-track per set.
-
-~~~
-┌──────────────────────────────────────────────────────────────────────┐
-│                      Multiple Switching Sets                         │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│ ┌─── Switching Set 1 ───┐  ┌─── Switching Set 2 ───┐                 │
-│ │       (Alice)         │  │        (Bob)          │                 │
-│ │                       │  │                       │                 │
-│ │ Track   Track   Track │  │ Track   Track   Track │                 │
-│ │ 1080p   720p    480p  │  │ 1080p   720p    480p  │    ...          │
-│ │                       │  │                       │                 │
-│ └───────────────────────┘  └───────────────────────┘                 │
-│          │                          │                                │
-│          v                          v                                │
-│    [Relay selects           [Relay selects                           │
-│     720p for Alice]          480p for Bob]                           │
-│                                                                      │
-│ Bandwidth allocated across sets based on Set throughput fraction     │
-└──────────────────────────────────────────────────────────────────────┘
-~~~
 
 ## Content Requirements
 
@@ -190,122 +162,65 @@ For tracks to participate in a dynamic switching set, they:
 * MUST be time aligned at group boundaries. This enables the relay to switch
   between tracks at group boundaries without disruption.
 
-* MUST hold equivalent and independent versions of the same content, encoded
-  at different bitrates. DTS is not a solution for switching between Scalable
-  Video Coding (SVC) layers, which have dependencies between layers.
+* MUST hold equivalent and independent versions of the same content at
+  different throughput levels. DTS is not a solution for switching between
+  tracks with inter-track dependencies (e.g., layered coding where higher
+  layers depend on lower layers).
 
 * SHOULD have consistent group durations across all tracks within a
   switching set to simplify relay timing decisions.
 
 ## Original Publisher Requirements
 
-Original publishers are responsible for producing and advertising tracks that can be
-dynamically switched by relays.
+Original publishers are responsible for producing tracks that can be dynamically
+switched by relays.
 
-- MUST publish multiple time-aligned tracks of the same content at different throughput levels
-  (see {{usecase-abr}}, {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}},
-  {{usecase-gaming}}, {{usecase-sports}}, {{usecase-teleop}})
+- MUST publish multiple time-aligned tracks of the same content at different throughput
+  levels
 
-- MUST ensure groups across tracks are temporally aligned to enable seamless switching at
-  group boundaries (see {{usecase-abr}}, {{usecase-videoconf}}, {{usecase-vr}}, {{usecase-sports}})
+- MUST ensure groups across tracks are temporally aligned to enable seamless switching
+  at group boundaries
 
-- SHOULD advertise throughput requirements for each track to enable bandwidth-based selection
-  (see {{usecase-abr}}, {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}},
-  {{usecase-gaming}}, {{usecase-sports}}, {{usecase-teleop}})
+- SHOULD advertise throughput requirements for each track to enable bandwidth-based
+  selection
 
-- SHOULD indicate which tracks belong to the same switching set or alternate group
-  (see {{usecase-abr}}, {{usecase-videoconf}})
-
-- SHOULD indicate content type characteristics and relative priorities when publishing multiple
-  content types (see {{usecase-screenshare}}, {{usecase-gaming}}, {{usecase-teleop}})
-
-- SHOULD publish high-priority or fixed-bandwidth streams (such as HUD overlays, stats, or
-  telemetry) as separate tracks with low publisher_priority values
-  (see {{usecase-gaming}}, {{usecase-sports}}, {{usecase-teleop}})
-
-- SHOULD minimize encoding latency for latency-critical streams such as control cameras or
-  interactive game video (see {{usecase-gaming}}, {{usecase-teleop}})
-
-- MUST ensure all streams share a common time reference when temporal synchronization across
-  multiple streams is required (see {{usecase-sports}}, {{usecase-teleop}})
-
-- SHOULD indicate spatial relationships or layer hierarchy when applicable
-  (see {{usecase-vr}})
+See {{usecase-abr}}, {{usecase-videoconf}}, {{usecase-vr}}, and {{usecase-sports}} for examples.
 
 ## End Subscriber Requirements
 
 End subscribers are responsible for establishing subscriptions and communicating switching
 preferences to relays.
 
-- MUST subscribe to all desired tracks within a switching set and indicate which subscriptions
-  form a switching set for relay coordination (see {{usecase-abr}})
+- MUST subscribe to all desired tracks within a switching set and indicate which
+  subscriptions form a switching set via SWITCHING-SET-ASSIGNMENT
 
-- MUST be prepared to process any track within the switching set (see {{usecase-abr}})
+- MUST be prepared to process any track within the switching set
 
-- MUST subscribe to multiple switching sets simultaneously when receiving multiple independent
-  streams (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-gaming}},
-  {{usecase-sports}}, {{usecase-teleop}})
+- MUST specify fraction and rank for each switching set to guide relay bandwidth allocation
 
-- MUST indicate relative bandwidth allocation via Set throughput fraction for each switching
-  set to guide relay bandwidth allocation (see {{usecase-videoconf}}, {{usecase-screenshare}},
-  {{usecase-vr}}, {{usecase-sports}}, {{usecase-teleop}})
+- MAY dynamically adjust fraction and rank via REQUEST_UPDATE based on changing conditions
 
-- SHOULD use content type characteristics from the catalog to determine appropriate relative
-  priorities or weights (see {{usecase-screenshare}}, {{usecase-gaming}}, {{usecase-teleop}})
-
-- MAY dynamically adjust priorities based on changing conditions such as active speaker changes,
-  gaze direction updates, or user interaction
-  (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-sports}})
-
-- SHOULD specify total bandwidth budget or constraints when applicable (see {{usecase-videoconf}})
-
-- MAY specify minimum acceptable quality thresholds for critical content
-  (see {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-sports}})
-
-- SHOULD specify latency requirements for latency-critical streams
-  (see {{usecase-gaming}}, {{usecase-teleop}})
+See {{usecase-videoconf}}, {{usecase-vr}}, {{usecase-screenshare}}, and {{usecase-sports}} for examples of dynamic updates.
 
 ## Relay Requirements
 
 Relays are responsible for making dynamic track selection decisions and forwarding the
-appropriate groups to downstream subscribers. Relays do not have access to the catalog;
-switching metadata is obtained from track properties in publish messages and from
-subscribe parameters in subscribe or subscribe namespace messages.
+appropriate groups to downstream subscribers.
 
-- MUST track available bandwidth to each downstream subscriber (see {{usecase-abr}})
+- MUST track available bandwidth to each downstream subscriber
 
 - MUST select exactly one track per switching set to forward at any given time
-  (see {{usecase-abr}}, {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}},
-  {{usecase-gaming}}, {{usecase-sports}}, {{usecase-teleop}})
 
 - MUST switch tracks at group boundaries to maintain continuity
-  (see {{usecase-abr}}, {{usecase-videoconf}}, {{usecase-vr}}, {{usecase-gaming}},
-  {{usecase-sports}}, {{usecase-teleop}})
 
-- MUST allocate forwarding capacity across multiple switching sets simultaneously when serving
-  subscribers with multiple concurrent streams
-  (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-vr}}, {{usecase-gaming}},
-  {{usecase-sports}}, {{usecase-teleop}})
+- MUST allocate bandwidth across switching sets based on fraction and rank
 
-- MUST respect Set throughput fraction values when allocating bandwidth to switching sets
-  (see {{usecase-videoconf}}, {{usecase-screenshare}}, {{usecase-sports}})
+- MUST respond to fraction and rank updates from subscribers
 
-- SHOULD select appropriate tracks within each set's allocated bandwidth
-  (see {{usecase-videoconf}}, {{usecase-screenshare}})
+- SHOULD select the highest-throughput track that fits within each set's allocated bandwidth
 
-- MUST respond rapidly to Set throughput fraction updates from subscribers
-  (see {{usecase-videoconf}}, {{usecase-vr}}, {{usecase-sports}})
-
-- MUST prioritize forwarding groups for high-priority streams before performing adaptive
-  allocation for other streams (see {{usecase-gaming}}, {{usecase-sports}}, {{usecase-teleop}})
-
-- MUST prioritize latency for latency-critical streams such as control cameras or interactive
-  game video (see {{usecase-gaming}}, {{usecase-teleop}})
-
-- MUST maintain temporal synchronization when forwarding multiple related streams
-  (see {{usecase-sports}}, {{usecase-teleop}})
-
-- SHOULD minimize switching latency when bandwidth conditions change (see {{usecase-abr}})
+See {{usecase-abr}} for single switching set, {{usecase-videoconf}} for multiple sets,
+and {{usecase-sports}} for rank-based protection examples.
 
 # SWITCHING-SET-ASSIGNMENT Parameter {#switching-set-assignment}
 
@@ -315,9 +230,9 @@ switching set and specifies bandwidth allocation and optional ranking.
 
 ~~~
 SWITCHING-SET-ASSIGNMENT {
-  Switching set ID (vi64),
-  Throughput threshold (vi64),
-  Set throughput fraction (vi64),
+  Switching set ID (v64),
+  Throughput threshold (v64),
+  Set throughput fraction (v64),
   Activate switching (1),
   [Set rank (8)]
 }
@@ -438,8 +353,8 @@ than SUBSCRIBE.
 The relay monitors all tracks within the namespace and selects the top-N tracks ranked
 by the specified property (e.g., LOUDNESS for voice activity detection, VIEWCOUNT for
 popularity). For each matching track, the relay sends a PUBLISH message. The subscriber
-assigns tracks to switching sets via PUBLISH_OK, just as in Method 1 but using PUBLISH_OK
-instead of SUBSCRIBE.
+assigns tracks to switching sets via PUBLISH_OK, just as in {{method-subscribe}} but
+using PUBLISH_OK instead of SUBSCRIBE.
 
 The selection is dynamic: as property values change, tracks may be added or removed
 from the top-N set. When the selection changes:
@@ -454,11 +369,14 @@ throughput levels).
 
 ~~~
 TRACK_FILTER {
-  Property Type (vi64),       // e.g., LOUDNESS for voice activity
-  MaxTracksSelected (vi64),   // Number of tracks to select
-  Timeout (vi64)
+  Property Type (v64),       // e.g., LOUDNESS for voice activity
+  MaxTracksSelected (v64),   // Number of tracks to select
+  Timeout (v64)
 }
 ~~~
+
+Note: TRACK_FILTER is defined in the MOQT SUBSCRIBE_NAMESPACE extension
+(see https://github.com/moq-wg/moq-transport/pull/1518).
 
 ~~~
 Subscriber                              Relay
@@ -525,7 +443,7 @@ Subscribers can update switching set parameters at any time via REQUEST_UPDATE. 
 processes these updates and adjusts bandwidth allocation accordingly.
 
 ~~~
-// Change priority: demote set 1, promote set 2
+// Reallocate bandwidth: reduce set 1 from 40% to 20%, increase set 2 from 20% to 40%
 REQUEST_UPDATE (set 1 subscription)
   SWITCHING-SET-ASSIGNMENT{id=1, fraction=2}
 
