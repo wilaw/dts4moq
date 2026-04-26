@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-04-23T02:00:05.679335+00:00",
+  "timestamp": "2026-04-26T02:03:27.296160+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -134,15 +134,15 @@
       "id": "I_kwDOROSEss7ruzBd",
       "title": "Limitations of timer-based definition of synchronized tracks",
       "url": "https://github.com/wilaw/dts4moq/issues/6",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "gwendalsimon",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "(As for the SWITCH message), we need a definition of \"common group boundaries\" for a pair of tracks. I think there is a consensus on a definition such as \"_groups with the same ID arriving approximately at the same time_\". Yet, timer-based approach has some limitations:\n- The Subscriber must set a timeout although it does not know the size of the group, nor the objects. Ex: If the first object of a group takes in average 1 sec to be transmitted, then 200 ms may be acceptable, but it would not be for a small group taking say 50ms to be delivered.\n- The Subscriber does not know the Relay upstream connection. In case of significant jitter (for example due to long RTT and non-negligible packet losses), the timer should be increased.\n- If the upstream connection is congested, then the track with the minimum bitrate arrives first, maybe by a far margin. In that case, all other high-quality tracks will be unselected because they arrive too late at the Relay.\n\nIt could be possible to ignore the \"approximately at the same time\" to define common group boundaries. We trust the fact that the Subscriber indicated that these tracks are in sync. So if the Relay has the same group IDs for two tracks in its cache or in the upstream wire, it considers they are common group boundaries (and if not, then it is a matter for the Subscriber).\n\n",
       "createdAt": "2026-02-17T22:21:46Z",
-      "updatedAt": "2026-03-18T19:19:25Z",
-      "closedAt": null,
+      "updatedAt": "2026-04-24T20:48:06Z",
+      "closedAt": "2026-04-24T20:48:06Z",
       "comments": [
         {
           "author": "wilaw",
@@ -157,6 +157,13 @@
           "body": " > > It could be possible to ignore the \"approximately at the same time\" to define common group boundaries.\n> \n> Can you explain how you would do this? If we discard the feature that the switching mechanism will select a second-preference track if the first-preference track does not arrive in time, then we can dispense with timeouts all-together, as the relay will simply make a track selection and stick with it, no matter how long the groups take to arrive. But we have to give up on that feature first.\n\nThe algorithm I had in mind is as follows. A Relay is playing track A (preferred track). It arrives at the end of group N. Then it should take a decision among all tracks for which it received the N+1 group (or if gaps, the N+x  group where x is the smallest). These are the \"availableTrackSet\". The Relay chooses the preferred track among the availableTrackSet. This set may be similar to the SwitchingSet, or it can be a subset of SwitchingSet due to timing constraints. If A is in the AvailableTrackSet, it can stay on A. It not, then it should choose its preferred track among the AvailableTrackSet.\n\nI think it can avoid one pitfall of the timeout based. Let's say that, because the timer is too strict, some tracks have been \"disqualified\" for group N+1 (they arrived too late). However, when the Relay arrives at the end of group N, its internal buffer contains the group N+1 for some of these disqualified tracks. Should it ignore these tracks just because they arrived slightly late against a timer some time ago, or should it consider them nonetheless? I would be in the second team. And so we could get rid of the timer.\n\nThis was one of the debates related to SWITCH. In my opinion, Groups are \"join points\". I would say these join points are decision points. The Relay should decide to switch or not when it arrives at the end of a group and should start the next group.",
           "createdAt": "2026-03-18T18:46:31Z",
           "updatedAt": "2026-03-18T19:19:25Z"
+        },
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "@gwendalsimon After feedback at the Boulder interim, we removed the timer/timeout feature from the implementation. I think that avoids the issues you raised in this issue. If you concur, can you close it? ",
+          "createdAt": "2026-04-24T19:35:54Z",
+          "updatedAt": "2026-04-24T19:35:54Z"
         }
       ]
     },
@@ -165,15 +172,15 @@
       "id": "I_kwDOROSEss7rvGr2",
       "title": "Timer-based algo would need more details",
       "url": "https://github.com/wilaw/dts4moq/issues/7",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "gwendalsimon",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "The algorithm is not completely clear at the Relay side.\n- Is the bullet 3 for the initialization only? \"_When the first Object 0 of new Group N of track T arrives at the relay_\". Should the Relay wait for a first objects of Group N of all tracks to arrive? Is there no timer to start?\n-  In bullet 4, \"_ If the track T is not the preferred track, then the relay caches the Group of track T and starts a selection timer_\". It is not clear when the the selection timer starts. Imho, we should start the timer at the reception of the first packet of the first object of group N+1 in any track, i.e. the first packet to arrive for group N+1 among all tracks in the switching set trigger the selection timer. As said in #6, if we wait for the end of the first object's reception, we are prone to jitter due to the different bitrate across tracks and we advantage to the lowest bitrate (which is probably not what we want). If we use the first byte of the first object, we are less sensitive to timer setting issues.\n- In case of gaps, group N+1 should be the next group\n- If we finish the transmission of Group N before starting sending the group N+1 (a.k.a. the next group), then we should restrict the approach to ascending order\n- The end of the timer may cause problem if the tracks have only *some* group boundaries. It is said that \"_If Group N of the preferred track has not arrived by the time the selection timer reaches the selection time limit, then the relay selects a new preferred track [...]_\". Let's say that the preferred track A has groups 30, 35, 40 ... and track B has groups 30, 31, 32, 33, 34, 35, 36, ... At the end of Track B's group 30 (or beginning of group 31), the timer would be triggered, which would cause the Track A to be disqualified. Does the Relay stop the delivery of Track A or should it continue the Group 30? If so, what happens at the time of group 35 (track A has been disqualified for 31, 32, 33, 34)?\n",
       "createdAt": "2026-02-17T22:47:09Z",
-      "updatedAt": "2026-03-15T23:28:20Z",
-      "closedAt": null,
+      "updatedAt": "2026-04-24T19:33:03Z",
+      "closedAt": "2026-04-24T19:33:02Z",
       "comments": [
         {
           "author": "afrind",
@@ -195,6 +202,13 @@
           "body": "> What happens to cached groups? If Track A's group was cached while waiting for Track B (preferred),\n> and B arrives in time \u2014 is A's cached data just discarded? \n\nNo, A is in cache so we just leave it there. With forward=0 subscriptions, all objects normally end up in cache. \n\n> And if B doesn't arrive and A gets selected via fallback, the cached data is then forwarded?\n\nYes. \n\n> Per-group or per-set timer? There's one timer per switching set per group boundary, right? Not per\n> track?\n\nThere is a separate time limit per track. This group felt that large versus small groups might be expected to have different arrival times. We could simplify things by going to a single time limit per switching set. \n\nStep 6 recursion \u2014 after removing the preferred track and re-running selection, what if the new\npreferred track also hasn't arrived? Do you start another timer? \n\nNo. The timer starts just once - when the first object of any Group in the switching set arrives. If the new preferred track hasn't arrived by its time limit, then it too is removed from the  candidate list. \n\n> \"selection timer > selection time limit\" \u2014 this comparison in step 5 seems backwards (should be <?),\n\nCorrect. It should be <. ",
           "createdAt": "2026-03-15T23:28:20Z",
           "updatedAt": "2026-03-15T23:28:20Z"
+        },
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "Based upon the feedback at the Boulder interim, we remove the timer mechanism. That simplifies the implementation . The relay now calculates the preferred track and forwards that, whether it is late or not. ",
+          "createdAt": "2026-04-24T19:33:02Z",
+          "updatedAt": "2026-04-24T19:33:02Z"
         }
       ]
     },
@@ -317,7 +331,7 @@
       "labels": [],
       "body": "This shouldn't be a REQUEST_UPDATE parameter, but a new message?  In draft-17, that means it would need it's own bidi stream too.  You could get rid of \"off\" in that case - cancelling the bidi stream is implicit off.\n\nOr we could live with the awkwardness of applying to a subscription -- is it an error if the subscription doesn't belong to the activated set?",
       "createdAt": "2026-03-15T11:55:13Z",
-      "updatedAt": "2026-03-16T05:38:14Z",
+      "updatedAt": "2026-04-24T19:25:55Z",
       "closedAt": null,
       "comments": [
         {
@@ -333,6 +347,13 @@
           "body": "I don't object to the signal - just noting that this not specific to a subscription.",
           "createdAt": "2026-03-16T05:38:14Z",
           "updatedAt": "2026-03-16T05:38:14Z"
+        },
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "Note that the implementation has been updated to remove the DTS-ACTIVATION parameter. There is now a single [parameter](https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html#name-switching-set-assignment-pa) which has the activate-switching flag. Your original points still hold however. We felt the \"awkwardness\" of it being applied to a subscription update but being intended to modify a switching set was less than the complexity of creating a new Message type. Additionally, for the Message proposal , cancelling the bidi stream would delete the switching set, instead of just pausing it as the current Api does. \n\n```\nSWITCHING-SET-ASSIGNMENT {\n  Switching set ID (v64),\n  Throughput threshold (v64),\n  Set throughput fraction (v64),\n  Activate switching (1),\n  [Set rank (8)]\n}\n```\n\n>  is it an error if the subscription doesn't belong to the activated set?\n\nyes. ",
+          "createdAt": "2026-04-24T19:25:55Z",
+          "updatedAt": "2026-04-24T19:25:55Z"
         }
       ]
     },
@@ -372,9 +393,17 @@
       "labels": [],
       "body": "Subscriber may have set up a switching set include all track variants and publisher may be actively sending those. Now if the publisher's uplink throughput drops it may have to stop sending one or more tracks in the set. We should document how would the relay and the subscriber react to this. Ideally the relay would start sending the highest variant the the publisher is publishing but this may need some signaling between subscriber and relay",
       "createdAt": "2026-03-17T04:23:06Z",
-      "updatedAt": "2026-03-17T04:23:06Z",
+      "updatedAt": "2026-04-24T19:09:23Z",
       "closedAt": null,
-      "comments": []
+      "comments": [
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "If a publisher stops sending a track that is part of a subscriber-defined switching set, then the relay MUST remove that track from the set and perform switching between the remaining tracks in the set. Same is true if the set was constructed via SUBSCRIBE_NAMESPACE. The terminated track would simply fall out of the Track Filter. \n\nYou make a good point that the relay will remove the  terminated track form the set, and that this is not something that the subscribing client would need to do. ",
+          "createdAt": "2026-04-24T19:09:23Z",
+          "updatedAt": "2026-04-24T19:09:23Z"
+        }
+      ]
     },
     {
       "number": 15,
@@ -694,25 +723,35 @@
       "id": "PR_kwDOROSEss7OPiHi",
       "title": "Add support for single and multiple switching sets in DTS",
       "url": "https://github.com/wilaw/dts4moq/pull/18",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "suhasHere",
       "authorAssociation": "COLLABORATOR",
       "assignees": [],
       "labels": [],
       "body": "This PR allows Subscribers to create multiple switching sets through two methods via Individual SUBSCRIBEs and  SUBSCRIBE_NAMESPACE with TRACK_FILTER, wherein both methods result a similar relay behavior\r\n\r\nIt further:\r\n\r\n- Updates introduction and abstract to refer to the use-cases\r\n- Clarifies Mapping model from MOQ Tracks to Switching Sets\r\n- Explain unified relay behavior for single and multiple switching sets and shows from the relay perspective the behavior is same\r\n- Adds optional set rank for cases where sets need not be degraded equally. \r\n- Provides examples explaining the proposal\r\n- Add a section on how SWITCH and DTS interact or can be supported in a single solution",
       "createdAt": "2026-03-28T07:25:33Z",
-      "updatedAt": "2026-04-22T05:52:15Z",
+      "updatedAt": "2026-04-24T18:42:05Z",
       "baseRepository": "wilaw/dts4moq",
       "baseRefName": "main",
       "baseRefOid": "cc4c2ba19e20114d9775103b63821c3d829572fc",
       "headRepository": "wilaw/dts4moq",
       "headRefName": "mult-sets",
-      "headRefOid": "7a19a75c5408398d4806336526981cd746884ff1",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
-      "comments": [],
+      "headRefOid": "574f49a5e69366455c64daa3f96b4d5dfd045712",
+      "closedAt": "2026-04-24T18:42:01Z",
+      "mergedAt": "2026-04-24T18:42:01Z",
+      "mergedBy": "wilaw",
+      "mergeCommit": {
+        "oid": "a3e8472bd569f8c39041c0f40d75f5a6955d5efb"
+      },
+      "comments": [
+        {
+          "author": "suhasHere",
+          "authorAssociation": "COLLABORATOR",
+          "body": "@wilaw  the new sets of commits should be good to do. Please check with all comments turned off.",
+          "createdAt": "2026-04-24T18:33:44Z",
+          "updatedAt": "2026-04-24T18:33:44Z"
+        }
+      ],
       "reviews": [
         {
           "id": "PRR_kwDOROSEss7wJ2ju",
@@ -923,8 +962,47 @@
               "updatedAt": "2026-04-01T12:50:40Z"
             }
           ]
+        },
+        {
+          "id": "PRR_kwDOROSEss74thEK",
+          "commit": {
+            "abbreviatedOid": "574f49a"
+          },
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "state": "APPROVED",
+          "body": "",
+          "createdAt": "2026-04-24T18:40:50Z",
+          "updatedAt": "2026-04-24T18:40:50Z",
+          "comments": []
         }
       ]
+    },
+    {
+      "number": 19,
+      "id": "PR_kwDOROSEss7Vc15F",
+      "title": "Update handling of PUBLISH_DONE messages in switching sets",
+      "url": "https://github.com/wilaw/dts4moq/pull/19",
+      "state": "OPEN",
+      "author": "wilaw",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Clarified behavior regarding PUBLISH_DONE messages for tracks and subscriptions in switching sets.\r\n\r\nFixes #13 \r\nFixes #2 ",
+      "createdAt": "2026-04-24T19:56:30Z",
+      "updatedAt": "2026-04-24T19:56:30Z",
+      "baseRepository": "wilaw/dts4moq",
+      "baseRefName": "main",
+      "baseRefOid": "a3e8472bd569f8c39041c0f40d75f5a6955d5efb",
+      "headRepository": "wilaw/dts4moq",
+      "headRefName": "wilaw-patch-1",
+      "headRefOid": "a687e92f1216edbd9d5911d2164deb6dc63ef758",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
     }
   ]
 }
