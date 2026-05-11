@@ -5,7 +5,7 @@
 Media Over QUIC                                                   W. Law
 Internet-Draft                                                    Akamai
 Intended status: Informational                                  I. Swett
-Expires: 26 October 2026                                          Google
+Expires: 12 November 2026                                         Google
                                                            S. Nandakumar
                                                                M. Zanaty
                                                                    Cisco
@@ -16,7 +16,7 @@ Expires: 26 October 2026                                          Google
                                                       Ozyegin University
                                                                 G. Simon
                                                                Synamedia
-                                                           24 April 2026
+                                                             11 May 2026
 
 
                 Dynamic Track Switching for MOQT relays
@@ -68,7 +68,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 26 October 2026.
+   This Internet-Draft will expire on 12 November 2026.
 
 Copyright Notice
 
@@ -449,6 +449,11 @@ Table of Contents
 
    *  *Resume DTS*: Send REQUEST_UPDATE with activate=1
 
+   If the subscriber receives a PUBLISH_DONE message for a track it had
+   previously allocated to a switching set, there is no need to
+   explicitly remove that track from the switching set, as the relay
+   will perform that function automatically.
+
 4.2.  Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER
 
    The subscriber specifies selection criteria via TRACK_FILTER, and the
@@ -550,6 +555,11 @@ Table of Contents
        set
 
    4.  If Activate switching = 1, begin active track selection
+
+   If the relay receives a PUBLISH_DONE message for a subscription that
+   was previously added to a switching set, then it must remove that
+   subscription from the switching set and continue to process the
+   switching across the remaining subscriptions within that set.
 
 5.2.  Dynamic Updates
 
