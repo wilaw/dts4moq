@@ -344,6 +344,10 @@ Subscriber                              Relay
 - **Disable DTS**: Send REQUEST_UPDATE with activate=0
 - **Resume DTS**: Send REQUEST_UPDATE with activate=1
 
+If the subscriber receives a PUBLISH_DONE message for a track it had previously
+allocated to a switching set, there is no need to explicitly remove that track
+from the switching set, as the relay will perform that function automatically.
+
 ## Method 2: SUBSCRIBE_NAMESPACE with TRACK_FILTER {#method-trackfilter}
 
 The subscriber specifies selection criteria via TRACK_FILTER, and the relay dynamically
@@ -436,6 +440,10 @@ When the relay receives a subscription with SWITCHING-SET-ASSIGNMENT:
 2. Set Forward state to 0 for the new subscription
 3. Store the Set throughput fraction and rank as properties of the set
 4. If Activate switching = 1, begin active track selection
+
+If the relay receives a PUBLISH_DONE message for a subscription that was previously
+added to a switching set, then it must remove that subscription from the switching set
+and continue to process the switching across the remaining subscriptions within that set.
 
 ## Dynamic Updates
 
