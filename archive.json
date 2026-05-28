@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-05-12T02:25:25.391145+00:00",
+  "timestamp": "2026-05-28T02:31:41.580543+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -444,6 +444,22 @@
           "updatedAt": "2026-03-20T02:26:41Z"
         }
       ]
+    },
+    {
+      "number": 20,
+      "id": "I_kwDOROSEss8AAAABDbKtUw",
+      "title": "How do you allocate bandwidth for non-DTS switched tracks?",
+      "url": "https://github.com/wilaw/dts4moq/issues/20",
+      "state": "OPEN",
+      "author": "afrind",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "If I read the latest draft correctly, each switching set gets a fraction (weight), but there's an assumption that sum(weights) across all switching sets normalizes to \"all available bandwidth\".  Or did I misunderstand?",
+      "createdAt": "2026-05-26T14:06:50Z",
+      "updatedAt": "2026-05-26T14:06:50Z",
+      "closedAt": null,
+      "comments": []
     }
   ],
   "pulls": [
