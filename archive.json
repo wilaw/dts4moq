@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-05-28T02:31:41.580543+00:00",
+  "timestamp": "2026-06-02T02:52:31.618275+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -331,7 +331,7 @@
       "labels": [],
       "body": "This shouldn't be a REQUEST_UPDATE parameter, but a new message?  In draft-17, that means it would need it's own bidi stream too.  You could get rid of \"off\" in that case - cancelling the bidi stream is implicit off.\n\nOr we could live with the awkwardness of applying to a subscription -- is it an error if the subscription doesn't belong to the activated set?",
       "createdAt": "2026-03-15T11:55:13Z",
-      "updatedAt": "2026-04-24T19:25:55Z",
+      "updatedAt": "2026-06-01T11:07:48Z",
       "closedAt": null,
       "comments": [
         {
@@ -354,6 +354,20 @@
           "body": "Note that the implementation has been updated to remove the DTS-ACTIVATION parameter. There is now a single [parameter](https://wilaw.github.io/dts4moq/draft-wilaw-moq-dts4moq.html#name-switching-set-assignment-pa) which has the activate-switching flag. Your original points still hold however. We felt the \"awkwardness\" of it being applied to a subscription update but being intended to modify a switching set was less than the complexity of creating a new Message type. Additionally, for the Message proposal , cancelling the bidi stream would delete the switching set, instead of just pausing it as the current Api does. \n\n```\nSWITCHING-SET-ASSIGNMENT {\n  Switching set ID (v64),\n  Throughput threshold (v64),\n  Set throughput fraction (v64),\n  Activate switching (1),\n  [Set rank (8)]\n}\n```\n\n>  is it an error if the subscription doesn't belong to the activated set?\n\nyes. ",
           "createdAt": "2026-04-24T19:25:55Z",
           "updatedAt": "2026-04-24T19:25:55Z"
+        },
+        {
+          "author": "yuyou",
+          "authorAssociation": "NONE",
+          "body": "We implemented this DTS feature and happy to show/demonstrate it during the coming London meeting or interop days. \nThe \"activate switching\" may require some clarification when it is applied to individual tracks in the Individual SUBSCRIBE mode.   \n\nCurrent draft says:\n> Activate switching: When set to 0, DTS switching is paused for this set (use when more subscriptions will be added, or to temporarily freeze the current selection). When set to 1, the relay activates or resumes switching. Changes to the selected track take effect at the next group boundary\n\nShould the text be revised as follows?\n\n* **When set to 0, DTS switching is paused for the track within the switching set.**\n* **When set to 1, the relay activates or resumes the affected track, and switching is re-evaluated immediately.**\n\nNote: \n* in our PoC, a de-activated track is excluded from the switching evaluation on the Relay. That's why a re-evaluation is needed ASAP a track becomes active again. \n* Completely disabling a switching set requires sending a separate `REQUEST_UPDATE` for each member track. It is worth noting that at least one track must remain active; otherwise, all tracks in the switching set become inactive and no objects can be delivered from the set.\n\n",
+          "createdAt": "2026-06-01T09:41:15Z",
+          "updatedAt": "2026-06-01T09:55:14Z"
+        },
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "@yuyou  - very happy to hear that you have some implementation experience. If you would like to show off some results, I'd be happy to include a slide or two, or a short recorded demo in the presentaiton time that I have requested. \n\nRegarding the activation parameter, it is intended to apply to the entire switching set, as written. It is an on/off switch for the entire set, not for a single track. So completely deactivating a switching set only requires a single REQUEST_UPDATE against any constituent track within that set.\n\nYou seem to be using it to turn off a single track as being included in the switching set. The current instructions say that you should UNSUBSCRIBE from that set, which then removes it from the switching set but keeps all other tracks active. Is that not workable for your application? \n\nNote also that following on from the vote at the last online interim, this draft has been moved over as a [PR ](https://github.com/moq-wg/moq-transport/pull/1638)against MOQT. So please add future comments to that PR so that we do not loose track of them. \n\n\n",
+          "createdAt": "2026-06-01T11:07:48Z",
+          "updatedAt": "2026-06-01T11:07:48Z"
         }
       ]
     },
