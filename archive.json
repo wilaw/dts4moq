@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-06-02T02:52:31.618275+00:00",
+  "timestamp": "2026-06-11T02:53:39.895673+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -474,6 +474,44 @@
       "updatedAt": "2026-05-26T14:06:50Z",
       "closedAt": null,
       "comments": []
+    },
+    {
+      "number": 21,
+      "id": "I_kwDOROSEss8AAAABE3jyPg",
+      "title": "Are there any analyses or test results on the proposed throughput based ABR?",
+      "url": "https://github.com/wilaw/dts4moq/issues/21",
+      "state": "OPEN",
+      "author": "piersoh",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "Server side ABR is a less commonly deployed approach and there's many client side ABR algorithms that don't just use throughput to drive the ABR - they also rely on the state of client buffer and render pipeline, etc  - so it would seem that prudent that the suggested algorithm should reference results from simulation runs and preferably tests in production-like environments to show that it can provide for good performance in range of conditions. Low latency streaming makes ABR more challenging especially on startup and at quality switches so it would be good to see some basis for the suggested approach. \n\nThe authors are aware that some of their previous research has shown that throughput based approaches can lead to oscillation without some form of damping logic e.g [What happens when HTTP adaptive streaming players compete for bandwidth?](https://dl.acm.org/doi/10.1145/2229087.2229092), NOSSDAV '12 and \n[Server-Based Traffic Shaping for Stabilizing Oscillating Adaptive Streaming Players](https://faculty.cc.gatech.edu/~dovrolis/Papers/final-nossdav13.pdf), NOSSDAV '13.",
+      "createdAt": "2026-06-09T11:50:37Z",
+      "updatedAt": "2026-06-10T11:07:58Z",
+      "closedAt": null,
+      "comments": [
+        {
+          "author": "gwendalsimon",
+          "authorAssociation": "NONE",
+          "body": "Hey Piers, I agree with you. \n\nWe are discussing client-side ABR especially here https://github.com/afrind/moq-transport/pull/18, given that the previous attempt to implement client-side ABR https://github.com/moq-wg/moq-transport/pull/1378 has been parked.  ",
+          "createdAt": "2026-06-09T12:01:17Z",
+          "updatedAt": "2026-06-09T12:01:17Z"
+        },
+        {
+          "author": "wilaw",
+          "authorAssociation": "OWNER",
+          "body": "I made a slide on this subject for the London interim https://docs.google.com/presentation/d/1HcgIrk5C4phT_OyfN0xhRCVMwpflTOFEy6OXYHUU5sc/edit?slide=id.g3eaafcbe046_0_0#slide=id.g3eaafcbe046_0_0",
+          "createdAt": "2026-06-10T07:22:37Z",
+          "updatedAt": "2026-06-10T07:22:37Z"
+        },
+        {
+          "author": "piersoh",
+          "authorAssociation": "NONE",
+          "body": "It would seem that unless there's open tested ABR algorithm(s) it may not be worth working on a new one - instead it may be best to define some API so that others can connect/load their own algorithms perhaps using something like WASM which could use APIs defined in [Wasm Interface Type (WIT)] (https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md) that expose some transport metrics (e.g. throughput, RTT, etc) and control interfaces. Or the relays could just use native plugins/libraries etc.\nOn the client side it seems that it's best left to the client/player to define their own - every player seems to use different ABR algorithm(s).",
+          "createdAt": "2026-06-10T11:07:41Z",
+          "updatedAt": "2026-06-10T11:07:58Z"
+        }
+      ]
     }
   ],
   "pulls": [
