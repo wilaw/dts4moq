@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-07-19T01:59:37.312697+00:00",
+  "timestamp": "2026-07-26T02:04:18.382625+00:00",
   "repo": "wilaw/dts4moq",
   "labels": [
     {
@@ -518,15 +518,15 @@
       "id": "I_kwDOROSEss8AAAABJRiosA",
       "title": "Byte alignment of the SWITCHING-SET-ASSIGNMENT",
       "url": "https://github.com/wilaw/dts4moq/issues/22",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "kota-yata",
       "authorAssociation": "NONE",
       "assignees": [],
       "labels": [],
       "body": "Currently the struct is defined as follows:\n\n```\nSWITCHING-SET-ASSIGNMENT {\n  Switching set ID (v64),\n  Throughput threshold (v64),\n  Set throughput fraction (v64),\n  Activate switching (1),\n  [Set rank (8)]\n}\n```\n\nSince `Activate switching` is only a single bit, the struct does not end on a byte boundary, so padding is required either after the `Activate switching` bit or after `Set rank` when it is present.\n\nAs far as I know, the MOQT draft intentionally avoids bit-level padding by having a whole byte for a flag (like `End of Track` flag at `FETCH_OK`) for simplicity. I feel like it would also be better here to make `Activate switching` a full byte:\n\n```\nSWITCHING-SET-ASSIGNMENT {\n  Switching set ID (v64),\n  Throughput threshold (v64),\n  Set throughput fraction (v64),\n  Activate switching (8),\n  [Set rank (8)]\n}\n```",
       "createdAt": "2026-07-18T07:42:03Z",
-      "updatedAt": "2026-07-18T07:42:03Z",
-      "closedAt": null,
+      "updatedAt": "2026-07-23T13:33:51Z",
+      "closedAt": "2026-07-23T13:33:51Z",
       "comments": []
     }
   ],
